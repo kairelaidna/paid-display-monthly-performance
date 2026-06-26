@@ -134,6 +134,7 @@
         const APP_TITLE = 'Paid Display Monthly Performance';
         const LIGHTDASH_SHEET_ID = '1IOER5fHYosm7ZMLAqDd0RTWFL8om0lm9emelSwxCWvM';
         const PERFORMANCE_UPDATES_SHEET_ID = '15dr8wUNqMtE3VlQOHpczIbEWRk2z2sfpbwNWW8QVOYg';
+        const APPS_SCRIPT_DATA_BRIDGE_URL = 'https://script.google.com/a/macros/wise.com/s/AKfycbyhHkA6OiR_5dA_dQXGDFNdm4RL10BVQMLUutiVpiH7Amp05Qj3lVI7N5eH501rMPJy/exec';
         const LOCAL_LIGHTDASH_CSV = 'data/lightdash.csv';
         const LOCAL_PERFORMANCE_UPDATES_CSV = 'data/performance-updates.csv';
         const OPENAI_SUMMARY_TIMEOUT_MS = 90000;
@@ -250,13 +251,17 @@
 
         const sheetRowsToCSV = (rows) => rows.map(row => row.map(escapeCSV).join(',')).join('\n');
 
+        const getBridgeSource = (spreadsheetId) => spreadsheetId === PERFORMANCE_UPDATES_SHEET_ID ? 'updates' : 'lightdash';
+
         const loadGoogleSheetRows = (spreadsheetId, sheetName) => new Promise((resolve, reject) => {
             const callbackName = `__wiseSheetCallback_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
             const script = document.createElement('script');
+            const sourceParam = `source=${encodeURIComponent(getBridgeSource(spreadsheetId))}`;
+            const callbackParam = `callback=${encodeURIComponent(callbackName)}`;
             const sheetParam = sheetName ? `&sheet=${encodeURIComponent(sheetName)}` : '';
             const timeout = window.setTimeout(() => {
                 cleanup();
-                reject(new Error('Google Sheets did not respond. Check that the sheet is shared with your signed-in browser account.'));
+                reject(new Error('The Wise data bridge did not respond. Check that you are signed into your Wise Google account and that the Apps Script deployment is active.'));
             }, 20000);
 
             const cleanup = () => {
@@ -267,30 +272,20 @@
 
             window[callbackName] = (response) => {
                 cleanup();
-                if (!response || response.status === 'error') {
-                    const details = response?.errors?.[0]?.detailed_message || response?.errors?.[0]?.reason || 'Google Sheets returned an error.';
+                if (!response || !response.ok) {
+                    const details = response?.error || 'The Wise data bridge returned an error.';
                     reject(new Error(details));
                     return;
                 }
-                const table = response.table || {};
-                const cols = (table.cols || []).map(col => col.label || col.id || '');
-                const rows = (table.rows || []).map(row => {
-                    const cells = row.c || [];
-                    return cols.map((_, idx) => {
-                        const cell = cells[idx];
-                        if (!cell) return '';
-                        return formatSheetValue(cell.v, cell.f);
-                    });
-                });
-                resolve([cols, ...rows]);
+                resolve(response.rows || []);
             };
 
             script.onerror = () => {
                 cleanup();
-                reject(new Error('Google blocked the sheet request. Open the sheet in this browser once, or make the sheet link viewable/published so the tool can read it.'));
+                reject(new Error('The Wise data bridge could not be loaded. Open the Apps Script URL in this browser once and confirm you are signed into Wise Google.'));
             };
 
-            script.src = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json;responseHandler:${callbackName}${sheetParam}`;
+            script.src = `${APPS_SCRIPT_DATA_BRIDGE_URL}?${sourceParam}&${callbackParam}${sheetParam}`;
             document.head.appendChild(script);
         });
 
@@ -313,7 +308,7 @@
 
         const loadRowsFromGoogleOrCache = async (spreadsheetId, sheetName, fallbackPath) => {
             try {
-                return { rows: await loadGoogleSheetRows(spreadsheetId, sheetName), source: 'Google Sheet' };
+                return { rows: await loadGoogleSheetRows(spreadsheetId, sheetName), source: 'Wise data bridge' };
             } catch (sheetError) {
                 if (!fallbackPath) throw sheetError;
                 const rows = await loadLocalCSVRows(fallbackPath);

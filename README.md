@@ -8,9 +8,11 @@ Use **GitHub Pages**.
 
 This version has an **API KEY** field on the first page. The key is pasted by the user when generating the report and is not stored in GitHub.
 
+The Google Sheets data is loaded through a Wise Google Apps Script data bridge, so the source sheets can stay Wise-only.
+
 ## One-Time Setup
 
-1. Upload this project to the private GitHub repository.
+1. Upload this project to the GitHub repository.
 2. Open the repository on GitHub.
 3. Go to **Settings**.
 4. Open **Pages**.
@@ -46,5 +48,16 @@ The tool chooses the Performance Updates tab from the latest selected report mon
 - Do not commit the API key to GitHub.
 - Do not add the API key to this README or any `.env` file.
 - The key is entered in the browser only when the tool is used.
-- Keep the GitHub repository private and share the GitHub Pages URL only with the team.
-- Team members must be signed into a Wise Google account that can access the two Google Sheets.
+- GitHub Pages requires the repository to be public unless your account supports private Pages.
+- The source sheets remain Wise-only behind the Apps Script bridge.
+- Team members must be signed into a Wise Google account that can access the Apps Script deployment.
+
+## Data Bridge
+
+The hosted page reads from:
+
+```text
+https://script.google.com/a/macros/wise.com/s/AKfycbyhHkA6OiR_5dA_dQXGDFNdm4RL10BVQMLUutiVpiH7Amp05Qj3lVI7N5eH501rMPJy/exec
+```
+
+If that Apps Script deployment is replaced, update `APPS_SCRIPT_DATA_BRIDGE_URL` in `public/marketing-performance-slideshow.html`.
