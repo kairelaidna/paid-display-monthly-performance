@@ -41,7 +41,7 @@ https://kairelaidna.github.io/paid-display-monthly-performance/
 8. Review the slides.
 9. Use **Export Deck**.
 
-The tool chooses the Performance Updates tab from the latest selected report month. If Lightdash latest complete month is `2026-06`, it reads `June 2026`; if it is `2026-07`, it reads `July 2026`.
+The tool chooses the Performance Updates tab from the latest selected report month. If Lightdash latest complete month is `2026-06`, it first tries `June 2026`, then common variants such as `June`, `Jun 26`, and `2026-06`.
 
 ## Security Notes
 

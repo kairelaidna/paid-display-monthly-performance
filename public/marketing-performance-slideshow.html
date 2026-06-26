@@ -596,6 +596,40 @@
                 return `${MONTHS[previousMonth.getMonth()]} ${previousMonth.getFullYear()}`;
             };
 
+            const getPerformanceUpdateTabCandidates = () => {
+                const primary = getPerformanceUpdateTabName();
+                const year = getReportYear(selectedMonth);
+                const monthName = selectedMonth && selectedMonth !== 'No Date' ? getMoName(selectedMonth) : primary.split(' ')[0];
+                const monthIndex = MONTHS.findIndex(month => month.toLowerCase() === String(monthName).toLowerCase()) + 1;
+                const paddedMonth = monthIndex ? String(monthIndex).padStart(2, '0') : '';
+                const shortYear = String(year).slice(-2);
+                const shortMonth = String(monthName || '').slice(0, 3);
+                return [...new Set([
+                    primary,
+                    monthName,
+                    `${shortMonth} ${year}`,
+                    `${shortMonth} ${shortYear}`,
+                    `${monthName} ${shortYear}`,
+                    paddedMonth ? `${year}-${paddedMonth}` : '',
+                    paddedMonth ? `${paddedMonth}-${year}` : '',
+                    paddedMonth ? `${monthName} ${paddedMonth}` : ''
+                ].map(value => String(value || '').trim()).filter(Boolean))];
+            };
+
+            const loadPerformanceUpdateRows = async () => {
+                const candidates = getPerformanceUpdateTabCandidates();
+                const errors = [];
+                for (const tabName of candidates) {
+                    try {
+                        const result = await loadRowsFromGoogleOrCache(PERFORMANCE_UPDATES_SHEET_ID, tabName, null);
+                        return { ...result, tabName };
+                    } catch (err) {
+                        errors.push(`${tabName}: ${err.message}`);
+                    }
+                }
+                throw new Error(`Could not find a Performance Updates tab for ${getPerformanceUpdateTabName()}. Tried: ${candidates.join(', ')}.`);
+            };
+
             const aggregate = (records) => {
                 let s = 0, mRaw = 0, rRaw = 0, lSum = 0, pWSum = 0, pWeight = 0, cmSum = 0;
                 records.forEach(rec => {
@@ -1045,14 +1079,13 @@
 
             const handleUploadPerformanceUpdates = () => runActionWithProgress('updates', async () => {
                 if (!rawData.length || !reportData) throw new Error('Upload Lightdash data first so the tool can choose the correct month tab.');
-                const tabName = getPerformanceUpdateTabName();
-                const { rows, source } = await loadRowsFromGoogleOrCache(PERFORMANCE_UPDATES_SHEET_ID, tabName, null);
+                const { rows, source, tabName } = await loadPerformanceUpdateRows();
                 const updateNarratives = buildNarrativesFromUpdateRows(rows);
                 const updateCount = Object.keys(updateNarratives).length;
                 if (!updateCount) throw new Error(`No usable updates were found in the ${tabName} tab. Check the tab name and column labels.`);
                 setNarratives(prev => ({ ...prev, ...updateNarratives }));
                 setNarrativeMonth(selectedMonth);
-                return `Uploaded ${updateCount} update sections from ${source}.`;
+                return `Uploaded ${updateCount} update sections from ${source} tab ${tabName}.`;
             });
 
             const splitNotes = (text) => cleanUpdateText(text)
