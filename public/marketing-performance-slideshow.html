@@ -430,6 +430,7 @@
             const [isSyncing, setIsSyncing] = useState(false);
             const [headers, setHeaders] = useState([]);
             const [setupComplete, setSetupComplete] = useState(false);
+            const [apiKey, setApiKey] = useState('');
             const [actionState, setActionState] = useState({
                 lightdash: { status: 'idle', progress: 0, message: '' },
                 updates: { status: 'idle', progress: 0, message: '' },
@@ -1253,18 +1254,66 @@
             });
 
             const generateOpenAISummaries = async (sourceNarratives) => {
+                const trimmedApiKey = apiKey.trim();
+                if (!trimmedApiKey) throw new Error('Paste the API KEY before generating the monthly report.');
+
                 const controller = new AbortController();
                 const timeoutId = window.setTimeout(() => controller.abort(), OPENAI_SUMMARY_TIMEOUT_MS);
 
                 try {
-                    const response = await fetch('/api/generate-summaries', {
+                    const response = await fetch('https://api.openai.com/v1/chat/completions', {
                         method: 'POST',
                         signal: controller.signal,
                         headers: {
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${trimmedApiKey}`
                         },
                         body: JSON.stringify({
-                            report: buildAISummaryPayload(sourceNarratives)
+                            model: 'gpt-4.1',
+                            temperature: 0.35,
+                            response_format: { type: 'json_object' },
+                            messages: [
+                                {
+                                    role: 'developer',
+                                    content: [
+                                        'You write Wise Paid Display monthly performance slide copy in the style of an executive monthly deck.',
+                                        'Use only the supplied facts and notes; do not invent results, tests, markets, or plans.',
+                                        'Performance fields must be exactly two polished paragraphs: first a KPI recap sentence with MNCs, spend, and payback; second a synthesis paragraph that explains regional variance, what drove the movement, and what actions/tests mattered.',
+                                        'For platform performance fields, use the supplied platform KPI recap as the first paragraph, then synthesize the strongest and weakest regional movements plus any relevant regional notes.',
+                                        'Do not paste raw regional KPI recap lines into the second paragraph; turn them into a business narrative.',
+                                        'The synthesis paragraph should sound like the prior deck: specific regions, platforms, tests, scaling/budget/creative levers, and implications for efficiency. Prefer the polished monthly review voice: "exhibited significant variance", "notable growth", "strategic scaling", "budget allocation", "creative strategies", "renewed opportunities", "prompted a move", "capitalized on budget adjustments". Avoid generic phrases unless followed by concrete examples.',
+                                        'Plan fields must be high-quality strategic action lines separated by a blank row, matching regional Next Month Plans formatting. Do not use numbering, hyphen bullets, markdown bullets, or long paragraphs.',
+                                        'Do not copy terse source lines like "Make budget adjustments on GAC and TTD"; synthesize them into complete executive actions that include the region/platform, the lever, and the business purpose.',
+                                        'GLOBAL_plan must contain 5 synthesized actions, each roughly 18-34 words. Platform plans must contain 3 synthesized actions, each roughly 16-30 words. Each line should begin with an action verb or "In REGION,".',
+                                        'Before returning, clean grammar, tense, spelling, and capitalization while preserving the meaning.',
+                                        'Preserve numeric values, platform names, region names, MoM/YoY language, GBP symbols, and payback month values exactly where used. Return only valid JSON.'
+                                    ].join(' ')
+                                },
+                                {
+                                    role: 'user',
+                                    content: `Create polished monthly report copy matching the prior Paid Display deck style. Return JSON with exactly these keys: GLOBAL_perf, GLOBAL_plan, GAC_perf, GAC_plan, MOLOCO_perf, MOLOCO_plan, TTD_perf, TTD_plan.
+
+Follow this style pattern:
+Performance paragraph 1: direct KPI recap for the month, e.g. "{Platform} drove X MNCs (MoM) with spend of GBP Y, resulting in Zm payback (MoM)."
+Performance paragraph 2: concise strategic explanation of the story behind the numbers. Mention named regions and the operational levers from the source notes: scaling, tests, budget control, creative changes, targeting shifts, payback/LTV implications.
+Plans: use separate action lines like regional slides, with one blank row between each item. Make them strategic and specific. Do not number them and do not use hyphen bullets.
+
+Quality bar for GLOBAL_plan:
+"Continue to scale and optimize Paid Display activities in ASIA, leveraging successful targeting strategies in Malaysia, the Philippines, and Singapore."
+"Refine budget allocation and creative strategies in NORTHAM, focusing on efficient use of resources in the USA and Canada."
+"Implement video consideration campaigns in high-performing markets such as Japan, Singapore, and Australia to support the Paid Display strategy."
+"Reevaluate and enhance TTD strategies based on recent conversion lift test findings, paying attention to full-funnel approaches and precise audience targeting."
+"Finalize the analysis of incrementality tests across various regions to support strategic decisions on scaling initiatives for Moloco and other platforms."
+
+Reference voice from the prior deck:
+Global summaries should read like a monthly business review: identify growth regions, declining regions, then explain the shared operating theme across markets.
+Platform summaries should call out the strongest region, the softer region, efficiency/payback implications, and the concrete action or test behind the movement.
+Next Month Plans should be complete executive action lines, not terse copied source notes.
+
+DATA:
+${JSON.stringify(buildAISummaryPayload(sourceNarratives))}`
+                                }
+                            ]
                         })
                     });
 
@@ -1274,7 +1323,8 @@
                     }
 
                     const data = await response.json();
-                    const parsed = data.narratives || {};
+                    const content = data.choices?.[0]?.message?.content || '{}';
+                    const parsed = JSON.parse(content);
                     const allowedKeys = ['GLOBAL_perf', 'GLOBAL_plan', 'GAC_perf', 'GAC_plan', 'MOLOCO_perf', 'MOLOCO_plan', 'TTD_perf', 'TTD_plan'];
                     return allowedKeys.reduce((acc, key) => {
                         if (parsed[key]) acc[key] = key.endsWith('_plan') ? normalizePlanText(parsed[key]) : fixCommonText(parsed[key]);
@@ -1328,6 +1378,7 @@
                 setSelectedMonth('');
                 setNarratives({});
                 setNarrativeMonth('');
+                setApiKey('');
                 setSetupComplete(false);
                 setActionState({
                     lightdash: { status: 'idle', progress: 0, message: '' },
@@ -1380,6 +1431,15 @@
                             </div>
                             <h1 className="text-5xl font-black text-wise-fast mb-10 tracking-tighter uppercase leading-none">{APP_TITLE}</h1>
                             <div className="space-y-4">
+                                <input
+                                    type="password"
+                                    value={apiKey}
+                                    onChange={e => setApiKey(e.target.value)}
+                                    placeholder="API KEY"
+                                    autoComplete="off"
+                                    spellCheck="false"
+                                    className="w-full py-5 px-8 rounded-[2rem] bg-white/10 text-white placeholder-white/60 border border-white/10 outline-none font-black uppercase text-sm tracking-widest text-center focus:bg-white/15 focus:border-wise-fast/60"
+                                />
                                 <ActionButton
                                     actionKey="lightdash"
                                     idleLabel="Upload Lightdash Data"
@@ -1403,7 +1463,7 @@
                                     loadingLabel="Generating Monthly Report"
                                     doneLabel="Monthly Report Generated"
                                     onClick={handleGenerateMonthlyReport}
-                                    disabled={!rawData.length}
+                                    disabled={!rawData.length || !apiKey.trim()}
                                     icon={<Icons.Zap size={18} />}
                                 />
                             </div>
