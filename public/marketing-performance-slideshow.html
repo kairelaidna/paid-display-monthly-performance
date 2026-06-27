@@ -1181,10 +1181,12 @@
                 const loadedRowsByMonth = {};
                 const loadedTabsByMonth = {};
                 let sourceName = 'Wise data bridge';
+                let loadedViaBridgeIndex = false;
 
                 try {
                     const { source, tabs } = await loadAllPerformanceUpdateTabs(months);
                     sourceName = source || sourceName;
+                    loadedViaBridgeIndex = true;
                     tabs.forEach(tab => {
                         if (tab.matchedMonth && months.includes(tab.matchedMonth)) {
                             loadedRowsByMonth[tab.matchedMonth] = tab.rows;
@@ -1203,15 +1205,17 @@
                     console.warn(err);
                 }
 
-                for (const month of months) {
-                    if (loadedRowsByMonth[month]) continue;
-                    try {
-                        const { rows, source, tabName } = await loadPerformanceUpdateRows(month);
-                        loadedRowsByMonth[month] = rows;
-                        loadedTabsByMonth[month] = tabName;
-                        sourceName = source || sourceName;
-                    } catch (err) {
-                        console.warn(err);
+                if (!loadedViaBridgeIndex) {
+                    for (const month of months) {
+                        if (loadedRowsByMonth[month]) continue;
+                        try {
+                            const { rows, source, tabName } = await loadPerformanceUpdateRows(month);
+                            loadedRowsByMonth[month] = rows;
+                            loadedTabsByMonth[month] = tabName;
+                            sourceName = source || sourceName;
+                        } catch (err) {
+                            console.warn(err);
+                        }
                     }
                 }
 
