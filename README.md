@@ -41,7 +41,9 @@ https://kairelaidna.github.io/paid-display-monthly-performance/
 8. Review the slides.
 9. Use **Export Deck**.
 
-The tool chooses the Performance Updates tab from the latest selected report month. If Lightdash latest complete month is `2026-06`, it first tries `June 2026`, then common variants such as `June`, `Jun 26`, and `2026-06`.
+The tool pulls the latest Lightdash rows every time **Upload Lightdash Data** is clicked.
+
+The tool then loads all available Performance Updates tabs from the Apps Script bridge and matches them to every month available in the Lightdash data. If Lightdash includes `2026-06`, it matches tabs such as `June 2026`, `June`, `Jun 26`, and `2026-06`. When **Generate Monthly Report** is clicked, it prepares summaries for every matched month in the same session, so changing the month dropdown shows the historical report without another upload or generation step.
 
 ## Security Notes
 
@@ -61,3 +63,5 @@ https://script.google.com/a/macros/wise.com/s/AKfycbyhHkA6OiR_5dA_dQXGDFNdm4RL10
 ```
 
 If that Apps Script deployment is replaced, update `APPS_SCRIPT_DATA_BRIDGE_URL` in `public/marketing-performance-slideshow.html`.
+
+The bridge must support `allTabs=1` for the Performance Updates sheet so older months can be loaded for dropdown switching.
