@@ -64,4 +64,4 @@ https://script.google.com/a/macros/wise.com/s/AKfycbyhHkA6OiR_5dA_dQXGDFNdm4RL10
 
 If that Apps Script deployment is replaced, update `APPS_SCRIPT_DATA_BRIDGE_URL` in `public/marketing-performance-slideshow.html`.
 
-The bridge must support `allTabs=1` for the Performance Updates sheet so older months can be loaded for dropdown switching.
+For faster Performance Updates loading, use the v3 bridge in `outputs/apps-script-data-bridge-v3-fast-updates.js`. It supports `allTabs=1&months=2026-05,2026-04`, so the site only reads update tabs that match months in the Lightdash data instead of returning every tab in the workbook.

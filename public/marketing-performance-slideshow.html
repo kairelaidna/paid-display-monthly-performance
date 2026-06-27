@@ -253,13 +253,15 @@
 
         const getBridgeSource = (spreadsheetId) => spreadsheetId === PERFORMANCE_UPDATES_SHEET_ID ? 'updates' : 'lightdash';
 
-        const loadBridgePayload = (spreadsheetId, { sheetName = '', allTabs = false } = {}) => new Promise((resolve, reject) => {
+        const loadBridgePayload = (spreadsheetId, { sheetName = '', allTabs = false, months = [] } = {}) => new Promise((resolve, reject) => {
             const callbackName = `__wiseSheetCallback_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
             const script = document.createElement('script');
             const sourceParam = `source=${encodeURIComponent(getBridgeSource(spreadsheetId))}`;
             const callbackParam = `callback=${encodeURIComponent(callbackName)}`;
             const sheetParam = sheetName ? `&sheet=${encodeURIComponent(sheetName)}` : '';
             const allTabsParam = allTabs ? '&allTabs=1' : '';
+            const monthValues = Array.isArray(months) ? [...new Set(months.map(month => String(month || '').trim()).filter(Boolean))] : [];
+            const monthsParam = monthValues.length ? `&months=${encodeURIComponent(monthValues.join(','))}` : '';
             const timeout = window.setTimeout(() => {
                 cleanup();
                 reject(new Error('The Wise data bridge did not respond. Check that you are signed into your Wise Google account and that the Apps Script deployment is active.'));
@@ -286,7 +288,7 @@
                 reject(new Error('The Wise data bridge could not be loaded. Open the Apps Script URL in this browser once and confirm you are signed into Wise Google.'));
             };
 
-            script.src = `${APPS_SCRIPT_DATA_BRIDGE_URL}?${sourceParam}&${callbackParam}${sheetParam}${allTabsParam}`;
+            script.src = `${APPS_SCRIPT_DATA_BRIDGE_URL}?${sourceParam}&${callbackParam}${sheetParam}${allTabsParam}${monthsParam}`;
             document.head.appendChild(script);
         });
 
@@ -650,6 +652,7 @@
                     return tabs
                         .map(tab => ({
                             name: String(tab.name || tab.title || tab.sheetName || tab.tabName || '').trim(),
+                            matchedMonth: String(tab.matchedMonth || tab.month || tab.monthValue || '').trim(),
                             rows: tab.rows || []
                         }))
                         .filter(tab => tab.name && Array.isArray(tab.rows));
@@ -662,8 +665,8 @@
                 return [];
             };
 
-            const loadAllPerformanceUpdateTabs = async () => {
-                const payload = await loadBridgePayload(PERFORMANCE_UPDATES_SHEET_ID, { allTabs: true });
+            const loadAllPerformanceUpdateTabs = async (months = []) => {
+                const payload = await loadBridgePayload(PERFORMANCE_UPDATES_SHEET_ID, { allTabs: true, months });
                 const tabs = normalizeBridgeTabs(payload.tabs || payload.sheets || payload.sheetTabs);
                 if (!tabs.length) throw new Error('The Wise data bridge did not return Performance Updates tabs.');
                 return { source: 'Wise data bridge', tabs };
@@ -1180,9 +1183,16 @@
                 let sourceName = 'Wise data bridge';
 
                 try {
-                    const { source, tabs } = await loadAllPerformanceUpdateTabs();
+                    const { source, tabs } = await loadAllPerformanceUpdateTabs(months);
                     sourceName = source || sourceName;
+                    tabs.forEach(tab => {
+                        if (tab.matchedMonth && months.includes(tab.matchedMonth)) {
+                            loadedRowsByMonth[tab.matchedMonth] = tab.rows;
+                            loadedTabsByMonth[tab.matchedMonth] = tab.name;
+                        }
+                    });
                     months.forEach(month => {
+                        if (loadedRowsByMonth[month]) return;
                         const match = findPerformanceTabForMonth(tabs, month);
                         if (match) {
                             loadedRowsByMonth[month] = match.rows;
