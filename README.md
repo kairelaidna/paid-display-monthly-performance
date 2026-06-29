@@ -49,7 +49,7 @@ The tool then loads all available Performance Updates tabs from the Apps Script 
 
 - The headline KPI slides and global overview top boxes include all four Paid Display vendors: Google AC, Moloco, TTD, and Avow.
 - Platform split tables, platform slides, regional slides, regional cards, summaries, and plans use only Google AC, Moloco, and TTD.
-- LTV and payback are weighted averages from the Lightdash values, weighted by MNCs.
+- LTV and payback are weighted averages from the Lightdash values, weighted by rounded MNCs, matching the original CSV-upload version of the tool.
 
 ## Security Notes
 

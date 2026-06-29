@@ -679,21 +679,12 @@
             };
 
             const aggregate = (records) => {
-                let s = 0, mRaw = 0, rRaw = 0, lSum = 0, pWSum = 0, pWeight = 0, cmSum = 0;
+                let s = 0, m = 0, r = 0, lSum = 0, pWSum = 0, cmSum = 0;
                 records.forEach(rec => {
-                    const sp = safeNum(rec.spend), mn = safeNum(rec.mncs), regs = safeNum(rec.regs), pb = safeNum(rec.payback), ltv = safeNum(rec.ltv), cm = safeNum(rec.cm);
-                    s += sp; mRaw += mn; rRaw += regs; lSum += ltv * mn; cmSum += cm;
-                    if (String(rec.payback || '').trim() !== '') {
-                        pWSum += pb * mn;
-                        pWeight += mn;
-                    }
+                    const sp = safeNum(rec.spend), mn = Math.round(safeNum(rec.mncs)), regs = Math.round(safeNum(rec.regs)), pb = safeNum(rec.payback), ltv = safeNum(rec.ltv), cm = safeNum(rec.cm);
+                    s += sp; m += mn; r += regs; lSum += ltv * mn; pWSum += pb * mn; cmSum += cm;
                 });
-                const m = Math.round(mRaw);
-                const r = Math.round(rRaw);
-                const cpa = m > 0 ? s / m : 0;
-                const payback = pWeight !== 0 ? pWSum / pWeight : 0;
-                const ltv = mRaw > 0 ? lSum / mRaw : 0;
-                return { spend: s, mncs: m, regs: r, cpa, payback, ltv, cvr: r > 0 ? m / r : 0, cm: cmSum };
+                return { spend: s, mncs: m, regs: r, cpa: m > 0 ? s / m : 0, payback: m > 0 ? pWSum / m : 0, ltv: m > 0 ? lSum / m : 0, cvr: r > 0 ? m / r : 0, cm: cmSum };
             };
 
             const buildReportDataForMonth = (monthValue) => {
@@ -720,16 +711,17 @@
                     
                     const curMatchCorePlatforms = rMatchCorePlatforms.filter(d => d.date === monthValue);
 
-                    const combineMetricScope = (date) => {
-                        const overallAgg = aggregate(rMatchOverallPlatforms.filter(d => d.date === date));
-                        const coreAgg = aggregate(rMatchCorePlatforms.filter(d => d.date === date));
-                        return isGlobal ? overallAgg : coreAgg;
-                    };
+                    const combineMetricScope = (date) => aggregate(rMatchCorePlatforms.filter(d => d.date === date));
+                    const combineHeadlineScope = (date) => aggregate(rMatchOverallPlatforms.filter(d => d.date === date));
 
                     const stats = combineMetricScope(monthValue);
                     const getComp = (date) => combineMetricScope(date);
                     
                     const pmS = getComp(pmDate), pqS = getComp(pqDate), pyS = getComp(pyDate);
+                    const headlineStats = isGlobal ? combineHeadlineScope(monthValue) : null;
+                    const headlinePmS = isGlobal ? combineHeadlineScope(pmDate) : null;
+                    const headlinePqS = isGlobal ? combineHeadlineScope(pqDate) : null;
+                    const headlinePyS = isGlobal ? combineHeadlineScope(pyDate) : null;
 
                     const platformStats = CORE_PLATFORMS_UI.map(p => {
                         const pMatch = rMatchCorePlatforms.filter(d => d.platform === p);
@@ -823,6 +815,14 @@
                             qoq: { spend: calcShift(stats.spend, pqS.spend), mncs: calcShift(stats.mncs, pqS.mncs), payback: calcShift(stats.payback, pqS.payback), ltv: calcShift(stats.ltv, pqS.ltv), cpa: calcShift(stats.cpa, pqS.cpa), cm: calcShift(stats.cm, pqS.cm) },
                             yoy: { spend: calcShift(stats.spend, pyS.spend), mncs: calcShift(stats.mncs, pyS.mncs), payback: calcShift(stats.payback, pyS.payback), ltv: calcShift(stats.ltv, pyS.ltv), cpa: calcShift(stats.cpa, pyS.cpa), cm: calcShift(stats.cm, pyS.cm) }
                         },
+                        headline: isGlobal ? {
+                            stats: headlineStats,
+                            shifts: {
+                                mom: { spend: calcShift(headlineStats.spend, headlinePmS.spend), mncs: calcShift(headlineStats.mncs, headlinePmS.mncs), payback: calcShift(headlineStats.payback, headlinePmS.payback), ltv: calcShift(headlineStats.ltv, headlinePmS.ltv), cpa: calcShift(headlineStats.cpa, headlinePmS.cpa), cm: calcShift(headlineStats.cm, headlinePmS.cm) },
+                                qoq: { spend: calcShift(headlineStats.spend, headlinePqS.spend), mncs: calcShift(headlineStats.mncs, headlinePqS.mncs), payback: calcShift(headlineStats.payback, headlinePqS.payback), ltv: calcShift(headlineStats.ltv, headlinePqS.ltv), cpa: calcShift(headlineStats.cpa, headlinePqS.cpa), cm: calcShift(headlineStats.cm, headlinePqS.cm) },
+                                yoy: { spend: calcShift(headlineStats.spend, headlinePyS.spend), mncs: calcShift(headlineStats.mncs, headlinePyS.mncs), payback: calcShift(headlineStats.payback, headlinePyS.payback), ltv: calcShift(headlineStats.ltv, headlinePyS.ltv), cpa: calcShift(headlineStats.cpa, headlinePyS.cpa), cm: calcShift(headlineStats.cm, headlinePyS.cm) }
+                            }
+                        } : null,
                         platformStats, 
                         breakDown: finalBreakDown.slice(0, 16), 
                         dimKey 
@@ -859,6 +859,7 @@
             };
 
             const currentReportContext = getMonthlyReportContext(selectedMonth, reportData);
+            const globalHeadline = reportData?.global?.headline || (reportData?.global ? { stats: reportData.global.stats, shifts: reportData.global.shifts } : null);
             const gacGlobalStats = currentReportContext?.gacGlobalStats;
             const molocoGlobalStats = currentReportContext?.molocoGlobalStats;
             const ttdGlobalStats = currentReportContext?.ttdGlobalStats;
@@ -1732,9 +1733,9 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                     {/* MNCs */}
                                     <div className="flex flex-col items-center justify-center flex-1">
                                         <span className="text-3xl font-bold uppercase tracking-widest opacity-70 mb-4">MNCs</span>
-                                        <span className="font-black tracking-tighter leading-none mb-4" style={{ fontSize: '7rem' }}>{fmtCompactNum(reportData.global.stats.mncs)}</span>
-                                        <span className="text-4xl font-black tracking-tighter opacity-80">{reportData.global.shifts.mom.mncs > 0 ? '+' : ''}{(reportData.global.shifts.mom.mncs * 100).toFixed(1)}% MoM</span>
-                                        <span className="text-2xl font-black tracking-tighter opacity-60 mt-2">{reportData.global.shifts.yoy.mncs > 0 ? '+' : ''}{(reportData.global.shifts.yoy.mncs * 100).toFixed(1)}% YoY</span>
+                                        <span className="font-black tracking-tighter leading-none mb-4" style={{ fontSize: '7rem' }}>{fmtCompactNum(globalHeadline.stats.mncs)}</span>
+                                        <span className="text-4xl font-black tracking-tighter opacity-80">{globalHeadline.shifts.mom.mncs > 0 ? '+' : ''}{(globalHeadline.shifts.mom.mncs * 100).toFixed(1)}% MoM</span>
+                                        <span className="text-2xl font-black tracking-tighter opacity-60 mt-2">{globalHeadline.shifts.yoy.mncs > 0 ? '+' : ''}{(globalHeadline.shifts.yoy.mncs * 100).toFixed(1)}% YoY</span>
                                     </div>
                                     
                                     {/* Divider */}
@@ -1743,9 +1744,9 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                     {/* Payback */}
                                     <div className="flex flex-col items-center justify-center flex-1">
                                         <span className="text-3xl font-bold uppercase tracking-widest opacity-70 mb-4">Payback</span>
-                                        <span className="font-black tracking-tighter leading-none mb-4" style={{ fontSize: '7rem' }}>{reportData.global.stats.payback.toFixed(1)}m</span>
-                                        <span className="text-4xl font-black tracking-tighter opacity-80">{reportData.global.shifts.mom.payback > 0 ? '+' : ''}{(reportData.global.shifts.mom.payback * 100).toFixed(1)}% MoM</span>
-                                        <span className="text-2xl font-black tracking-tighter opacity-60 mt-2">{reportData.global.shifts.yoy.payback > 0 ? '+' : ''}{(reportData.global.shifts.yoy.payback * 100).toFixed(1)}% YoY</span>
+                                        <span className="font-black tracking-tighter leading-none mb-4" style={{ fontSize: '7rem' }}>{globalHeadline.stats.payback.toFixed(1)}m</span>
+                                        <span className="text-4xl font-black tracking-tighter opacity-80">{globalHeadline.shifts.mom.payback > 0 ? '+' : ''}{(globalHeadline.shifts.mom.payback * 100).toFixed(1)}% MoM</span>
+                                        <span className="text-2xl font-black tracking-tighter opacity-60 mt-2">{globalHeadline.shifts.yoy.payback > 0 ? '+' : ''}{(globalHeadline.shifts.yoy.payback * 100).toFixed(1)}% YoY</span>
                                     </div>
 
                                     {/* Divider */}
@@ -1754,9 +1755,9 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                     {/* CM */}
                                     <div className="flex flex-col items-center justify-center flex-1">
                                         <span className="text-3xl font-bold uppercase tracking-widest opacity-70 mb-4">CM</span>
-                                        <span className="font-black tracking-tighter leading-none mb-4" style={{ fontSize: '7rem' }}>{fmtCompactCurr(reportData.global.stats.cm)}</span>
-                                        <span className="text-4xl font-black tracking-tighter opacity-80">{reportData.global.shifts.mom.cm > 0 ? '+' : ''}{(reportData.global.shifts.mom.cm * 100).toFixed(1)}% MoM</span>
-                                        <span className="text-2xl font-black tracking-tighter opacity-60 mt-2">{reportData.global.shifts.yoy.cm > 0 ? '+' : ''}{(reportData.global.shifts.yoy.cm * 100).toFixed(1)}% YoY</span>
+                                        <span className="font-black tracking-tighter leading-none mb-4" style={{ fontSize: '7rem' }}>{fmtCompactCurr(globalHeadline.stats.cm)}</span>
+                                        <span className="text-4xl font-black tracking-tighter opacity-80">{globalHeadline.shifts.mom.cm > 0 ? '+' : ''}{(globalHeadline.shifts.mom.cm * 100).toFixed(1)}% MoM</span>
+                                        <span className="text-2xl font-black tracking-tighter opacity-60 mt-2">{globalHeadline.shifts.yoy.cm > 0 ? '+' : ''}{(globalHeadline.shifts.yoy.cm * 100).toFixed(1)}% YoY</span>
                                     </div>
                                 </div>
                             </div>
@@ -1784,12 +1785,12 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                     </div>
                                     
                                     <div className="flex gap-1.5 flex-1 justify-end">
-                                        <MetricCard title="Spend" val={fmtCompactCurr(reportData.global.stats.spend)} mom={reportData.global.shifts.mom.spend} yoy={reportData.global.shifts.yoy.spend} inverse={false} rawVal={reportData.global.stats.spend} />
-                                        <MetricCard title="MNCs" val={fmtCompactNum(reportData.global.stats.mncs)} mom={reportData.global.shifts.mom.mncs} yoy={reportData.global.shifts.yoy.mncs} inverse={false} rawVal={reportData.global.stats.mncs} />
-                                        <MetricCard title="LTV" val={`£${reportData.global.stats.ltv.toFixed(2)}`} mom={reportData.global.shifts.mom.ltv} yoy={reportData.global.shifts.yoy.ltv} inverse={false} rawVal={reportData.global.stats.ltv} />
-                                        <MetricCard title="CPA" val={`£${reportData.global.stats.cpa.toFixed(2)}`} mom={reportData.global.shifts.mom.cpa} yoy={reportData.global.shifts.yoy.cpa} inverse={true} rawVal={reportData.global.stats.cpa} />
-                                        <MetricCard title="Payback" val={reportData.global.stats.payback.toFixed(1) + 'm'} mom={reportData.global.shifts.mom.payback} yoy={reportData.global.shifts.yoy.payback} inverse={true} rawVal={reportData.global.stats.payback} />
-                                        <MetricCard title="CM" val={fmtCompactCurr(reportData.global.stats.cm)} mom={reportData.global.shifts.mom.cm} yoy={reportData.global.shifts.yoy.cm} inverse={false} rawVal={reportData.global.stats.cm} />
+                                        <MetricCard title="Spend" val={fmtCompactCurr(globalHeadline.stats.spend)} mom={globalHeadline.shifts.mom.spend} yoy={globalHeadline.shifts.yoy.spend} inverse={false} rawVal={globalHeadline.stats.spend} />
+                                        <MetricCard title="MNCs" val={fmtCompactNum(globalHeadline.stats.mncs)} mom={globalHeadline.shifts.mom.mncs} yoy={globalHeadline.shifts.yoy.mncs} inverse={false} rawVal={globalHeadline.stats.mncs} />
+                                        <MetricCard title="LTV" val={`£${globalHeadline.stats.ltv.toFixed(2)}`} mom={globalHeadline.shifts.mom.ltv} yoy={globalHeadline.shifts.yoy.ltv} inverse={false} rawVal={globalHeadline.stats.ltv} />
+                                        <MetricCard title="CPA" val={`£${globalHeadline.stats.cpa.toFixed(2)}`} mom={globalHeadline.shifts.mom.cpa} yoy={globalHeadline.shifts.yoy.cpa} inverse={true} rawVal={globalHeadline.stats.cpa} />
+                                        <MetricCard title="Payback" val={globalHeadline.stats.payback.toFixed(1) + 'm'} mom={globalHeadline.shifts.mom.payback} yoy={globalHeadline.shifts.yoy.payback} inverse={true} rawVal={globalHeadline.stats.payback} />
+                                        <MetricCard title="CM" val={fmtCompactCurr(globalHeadline.stats.cm)} mom={globalHeadline.shifts.mom.cm} yoy={globalHeadline.shifts.yoy.cm} inverse={false} rawVal={globalHeadline.stats.cm} />
                                     </div>
                                 </div>
                                 
