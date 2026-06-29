@@ -45,6 +45,12 @@ The tool pulls the latest Lightdash rows every time **Upload Lightdash Data** is
 
 The tool then loads all available Performance Updates tabs from the Apps Script bridge and matches them to every month available in the Lightdash data. If Lightdash includes `2026-06`, it matches tabs such as `June 2026`, `June`, `Jun 26`, and `2026-06`. When **Generate Monthly Report** is clicked, it prepares summaries for every matched month in the same session, so changing the month dropdown shows the historical report without another upload or generation step.
 
+## Calculation Rules
+
+- The headline KPI slides and global overview top boxes include all four Paid Display vendors: Google AC, Moloco, TTD, and Avow.
+- Platform split tables, platform slides, regional slides, regional cards, summaries, and plans use only Google AC, Moloco, and TTD.
+- LTV and payback are weighted averages from the Lightdash values, weighted by MNCs.
+
 ## Security Notes
 
 - Do not commit the API key to GitHub.

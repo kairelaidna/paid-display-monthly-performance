@@ -138,7 +138,6 @@
         const LOCAL_LIGHTDASH_CSV = 'data/lightdash.csv';
         const LOCAL_PERFORMANCE_UPDATES_CSV = 'data/performance-updates.csv';
         const OPENAI_SUMMARY_TIMEOUT_MS = 90000;
-        const PAYBACK_OUTLIER_CAP = 50;
         const REGIONS = ['LATAM', 'NORTHAM', 'EUROPE', 'ASIA', 'PACIFIC', 'GBR', 'MEA'];
         const PLATFORM_SEQUENCE = [
             { key: 'GAC', statName: 'Google AC', displayName: 'Google AC', narrativeName: 'Google AC', logoUrl: './assets/google-ac-logo.png', fallback: 'G' },
@@ -146,8 +145,10 @@
             { key: 'TTD', statName: 'TTD', displayName: 'The Trade Desk', narrativeName: 'The Trade Desk', logoUrl: './assets/the-trade-desk-logo.png', fallback: 'TTD' },
             { key: 'AVOW', statName: 'Avow', displayName: 'Avow', narrativeName: 'Avow', fallback: 'A' }
         ];
+        const CORE_PLATFORM_SEQUENCE = PLATFORM_SEQUENCE.filter(platform => platform.key !== 'AVOW');
         const REGIONAL_NARRATIVE_SEQUENCE = [PLATFORM_SEQUENCE[0], PLATFORM_SEQUENCE[2], PLATFORM_SEQUENCE[1]];
-        const PLATFORMS_UI = PLATFORM_SEQUENCE.map(platform => platform.statName);
+        const OVERALL_PLATFORMS_UI = PLATFORM_SEQUENCE.map(platform => platform.statName);
+        const CORE_PLATFORMS_UI = CORE_PLATFORM_SEQUENCE.map(platform => platform.statName);
         const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
         const safeNum = (v) => {
@@ -683,7 +684,7 @@
                     const sp = safeNum(rec.spend), mn = safeNum(rec.mncs), regs = safeNum(rec.regs), pb = safeNum(rec.payback), ltv = safeNum(rec.ltv), cm = safeNum(rec.cm);
                     s += sp; mRaw += mn; rRaw += regs; lSum += ltv * mn; cmSum += cm;
                     if (String(rec.payback || '').trim() !== '') {
-                        pWSum += Math.min(pb, PAYBACK_OUTLIER_CAP) * mn;
+                        pWSum += pb * mn;
                         pWeight += mn;
                     }
                 });
@@ -691,7 +692,7 @@
                 const r = Math.round(rRaw);
                 const cpa = m > 0 ? s / m : 0;
                 const payback = pWeight !== 0 ? pWSum / pWeight : 0;
-                const ltv = payback > 0 ? (cpa / payback) * 12 : (mRaw > 0 ? lSum / mRaw : 0);
+                const ltv = mRaw > 0 ? lSum / mRaw : 0;
                 return { spend: s, mncs: m, regs: r, cpa, payback, ltv, cvr: r > 0 ? m / r : 0, cm: cmSum };
             };
 
@@ -712,16 +713,17 @@
                 const buildRegionalData = (regionName) => {
                     const isGlobal = regionName === 'GLOBAL';
                     
-                    // Match the Paid Display source: Google App Campaigns, Moloco, The Trade Desk, and Avow.
+                    // Overall headline cards include Avow; all other report detail stays on the core three platforms.
                     const rMatchAll = rawData.filter(d => isGlobal || d.region === regionName);
-                    const rMatchTrackedPlatforms = rMatchAll.filter(d => PLATFORMS_UI.includes(d.platform));
+                    const rMatchOverallPlatforms = rMatchAll.filter(d => OVERALL_PLATFORMS_UI.includes(d.platform));
+                    const rMatchCorePlatforms = rMatchAll.filter(d => CORE_PLATFORMS_UI.includes(d.platform));
                     
-                    const curMatchTrackedPlatforms = rMatchTrackedPlatforms.filter(d => d.date === monthValue);
+                    const curMatchCorePlatforms = rMatchCorePlatforms.filter(d => d.date === monthValue);
 
                     const combineMetricScope = (date) => {
-                        const allAgg = aggregate(rMatchAll.filter(d => d.date === date));
-                        const trackedAgg = aggregate(rMatchTrackedPlatforms.filter(d => d.date === date));
-                        return { ...trackedAgg, mncs: allAgg.mncs };
+                        const overallAgg = aggregate(rMatchOverallPlatforms.filter(d => d.date === date));
+                        const coreAgg = aggregate(rMatchCorePlatforms.filter(d => d.date === date));
+                        return isGlobal ? overallAgg : coreAgg;
                     };
 
                     const stats = combineMetricScope(monthValue);
@@ -729,8 +731,8 @@
                     
                     const pmS = getComp(pmDate), pqS = getComp(pqDate), pyS = getComp(pyDate);
 
-                    const platformStats = PLATFORMS_UI.map(p => {
-                        const pMatch = rMatchTrackedPlatforms.filter(d => d.platform === p);
+                    const platformStats = CORE_PLATFORMS_UI.map(p => {
+                        const pMatch = rMatchCorePlatforms.filter(d => d.platform === p);
                         const curAgg = aggregate(pMatch.filter(d => d.date === monthValue));
                         const pmAgg = aggregate(pMatch.filter(d => d.date === pmDate));
                         const pqAgg = aggregate(pMatch.filter(d => d.date === pqDate));
@@ -771,7 +773,7 @@
                     });
 
                     // --- TABLE GROUPING LOGIC ---
-                    const breakDownRecords = curMatchTrackedPlatforms;
+                    const breakDownRecords = curMatchCorePlatforms;
                     let dimKey = isGlobal ? 'region' : 'country';
                     if (!isGlobal && breakDownRecords.every(d => !d.country || d.country === regionName)) {
                         const candidate = headers.find(h => !['date', 'region', 'platform', 'mncs', 'spend', 'regs', 'payback', 'ltv', 'cm', 'country'].includes(h));
@@ -1417,7 +1419,7 @@
                     platformStats: reportContext.reportData.global.platformStats,
                     planCandidates: collectPlanLines([], sourceNarratives, reportContext)
                 },
-                platforms: PLATFORM_SEQUENCE.map(meta => {
+                platforms: CORE_PLATFORM_SEQUENCE.map(meta => {
                     const platformGlobal = reportContext.reportData.global.platformStats.find(platform => platform.name === meta.statName);
                     return {
                         key: meta.key,
