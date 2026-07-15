@@ -2,6 +2,20 @@
 
 Static monthly report generator for Wise Paid Display reporting.
 
+## VoD Campaign Canvas
+
+The daily VoD campaign graph tool lives at:
+
+```text
+public/vod-campaign-canvas.html
+```
+
+In local Next development, open:
+
+```text
+/vod-campaign-canvas.html
+```
+
 ## Hosting Path
 
 Use **GitHub Pages**.
@@ -35,15 +49,15 @@ https://kairelaidna.github.io/paid-display-monthly-performance/
 2. Update the Performance Updates Google Sheet tab for the completed month, for example `June 2026`.
 3. Open the GitHub Pages URL.
 4. Paste the shared team key into **API KEY**.
-5. Click **Upload Lightdash Data**.
-6. Click **Upload Performance Updates**.
-7. Click **Generate Monthly Report**.
-8. Review the slides.
-9. Use **Export Deck**.
+5. Click **Generate Report**.
+6. Watch the button progress from 1% to 100% while the tool loads both Google Sheets and generates all available monthly reports.
+7. Review the slides.
+8. Use **Export Deck** for the presentation PDF.
+9. Use **Copy Summary** to copy the Slack-ready summary for the currently selected month.
 
-The tool pulls the latest Lightdash rows every time **Upload Lightdash Data** is clicked.
+The tool pulls the latest Lightdash rows every time **Generate Report** is clicked.
 
-The tool then loads all available Performance Updates tabs from the Apps Script bridge and matches them to every month available in the Lightdash data. If Lightdash includes `2026-06`, it matches tabs such as `June 2026`, `June`, `Jun 26`, and `2026-06`. When **Generate Monthly Report** is clicked, it prepares summaries for every matched month in the same session, so changing the month dropdown shows the historical report without another upload or generation step.
+The tool then loads all available Performance Updates tabs from the Apps Script bridge and matches them to every month available in the Lightdash data. If Lightdash includes `2026-06`, it matches tabs such as `June 2026`, `June`, `Jun 26`, and `2026-06`. When **Generate Report** is clicked, it prepares summaries for every matched month in the same session, so changing the month dropdown shows the historical report without another upload or generation step. Summary generation is parallelized so multiple months are prepared at the same time.
 
 ## Calculation Rules
 

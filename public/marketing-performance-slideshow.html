@@ -110,6 +110,7 @@
                 font-size: 14px !important;
                 line-height: 1.6 !important;
             }
+
         }
 
         .animate-grow { animation: grow 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards; transform-origin: left; scale: 0 1; }
@@ -138,6 +139,7 @@
         const LOCAL_LIGHTDASH_CSV = 'data/lightdash.csv';
         const LOCAL_PERFORMANCE_UPDATES_CSV = 'data/performance-updates.csv';
         const OPENAI_SUMMARY_TIMEOUT_MS = 90000;
+        const SUMMARY_GENERATION_CONCURRENCY = 3;
         const REGIONS = ['LATAM', 'NORTHAM', 'EUROPE', 'ASIA', 'PACIFIC', 'GBR', 'MEA'];
         const PLATFORM_SEQUENCE = [
             { key: 'GAC', statName: 'Google AC', displayName: 'Google AC', narrativeName: 'Google AC', logoUrl: './assets/google-ac-logo.png', fallback: 'G' },
@@ -150,6 +152,15 @@
         const OVERALL_PLATFORMS_UI = PLATFORM_SEQUENCE.map(platform => platform.statName);
         const CORE_PLATFORMS_UI = CORE_PLATFORM_SEQUENCE.map(platform => platform.statName);
         const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        const REGION_SLACK_FLAGS = {
+            LATAM: ':flag-br:',
+            NORTHAM: ':us:',
+            EUROPE: ':eu-flag:',
+            ASIA: ':flag-my:',
+            PACIFIC: ':flag-au:',
+            GBR: ':flag-gb:',
+            MEA: ':flag-tr:'
+        };
 
         const safeNum = (v) => {
             if (typeof v === 'number') return v;
@@ -179,6 +190,35 @@
                 }
             }
             return d.length > 3 ? d.substring(0, 3) + " 2026" : d;
+        };
+
+        const getMonthParts = (d) => {
+            if (!d || d === "No Date") return null;
+            const parts = String(d).split('-');
+            if (parts.length < 2) return null;
+            const yr = parts[0].length === 4 ? parseInt(parts[0], 10) : parseInt(parts[1], 10);
+            const mo = parts[0].length === 4 ? parseInt(parts[1], 10) : parseInt(parts[0], 10);
+            if (!yr || !mo || mo < 1 || mo > 12) return null;
+            return { year: yr, monthIndex: mo - 1 };
+        };
+
+        const formatFullMonthYear = (d) => {
+            const parts = getMonthParts(d);
+            return parts ? `${MONTHS[parts.monthIndex]} ${parts.year}` : formatCoverDate(d);
+        };
+
+        const formatNextFullMonthYear = (d) => {
+            const parts = getMonthParts(d);
+            if (!parts) return 'Next Month';
+            const nextIndex = (parts.monthIndex + 1) % 12;
+            const nextYear = parts.monthIndex === 11 ? parts.year + 1 : parts.year;
+            return `${MONTHS[nextIndex]} ${nextYear}`;
+        };
+
+        const formatSlackRegionMncs = (value) => {
+            const n = safeNum(value);
+            if (n >= 10000) return `${(n / 1000).toFixed(1).replace(/\.0$/, '')}k`;
+            return Math.round(n).toLocaleString();
         };
 
         const getRegionSubtitle = (region) => {
@@ -438,6 +478,7 @@
             const [headers, setHeaders] = useState([]);
             const [setupComplete, setSetupComplete] = useState(false);
             const [apiKey, setApiKey] = useState('');
+            const [summaryCopied, setSummaryCopied] = useState(false);
             const [actionState, setActionState] = useState({
                 lightdash: { status: 'idle', progress: 0, message: '' },
                 updates: { status: 'idle', progress: 0, message: '' },
@@ -568,8 +609,15 @@
                 const finishAfterMinimum = () => new Promise(resolve => {
                     window.setTimeout(resolve, Math.max(0, minimumVisibleMs - (Date.now() - startedAt)));
                 });
+                const setProgress = (progress, message = '') => {
+                    updateAction(key, {
+                        status: 'loading',
+                        progress: Math.max(1, Math.min(99, Math.round(progress))),
+                        ...(message ? { message } : {})
+                    });
+                };
 
-                updateAction(key, { status: 'loading', progress: 8, message: '' });
+                updateAction(key, { status: 'loading', progress: 1, message: '' });
                 const interval = window.setInterval(() => {
                     setActionState(prev => {
                         const current = prev[key];
@@ -578,14 +626,14 @@
                             ...prev,
                             [key]: {
                                 ...current,
-                                progress: Math.min(88, current.progress + 10)
+                                progress: Math.min(96, current.progress + 1)
                             }
                         };
                     });
-                }, 220);
+                }, 350);
 
                 try {
-                    const message = await work();
+                    const message = await work(setProgress);
                     await finishAfterMinimum();
                     window.clearInterval(interval);
                     updateAction(key, { status: 'done', progress: 100, message: message || '' });
@@ -687,9 +735,9 @@
                 return { spend: s, mncs: m, regs: r, cpa: m > 0 ? s / m : 0, payback: m > 0 ? pWSum / m : 0, ltv: m > 0 ? lSum / m : 0, cvr: r > 0 ? m / r : 0, cm: cmSum };
             };
 
-            const buildReportDataForMonth = (monthValue) => {
-                if (!rawData.length || !monthValue) return null;
-                const dates = [...new Set(rawData.map(d => d.date))].sort();
+            const buildReportDataForMonth = (monthValue, dataRows = rawData) => {
+                if (!dataRows.length || !monthValue) return null;
+                const dates = [...new Set(dataRows.map(d => d.date))].sort();
                 const curIdx = dates.indexOf(monthValue);
                 if (curIdx === -1) return null;
                 
@@ -705,7 +753,7 @@
                     const isGlobal = regionName === 'GLOBAL';
                     
                     // Overall headline cards include Avow; all other report detail stays on the core three platforms.
-                    const rMatchAll = rawData.filter(d => isGlobal || d.region === regionName);
+                    const rMatchAll = dataRows.filter(d => isGlobal || d.region === regionName);
                     const rMatchOverallPlatforms = rMatchAll.filter(d => OVERALL_PLATFORMS_UI.includes(d.platform));
                     const rMatchCorePlatforms = rMatchAll.filter(d => CORE_PLATFORMS_UI.includes(d.platform));
                     
@@ -1171,16 +1219,24 @@
                 setNarrativeMonth('');
             }, [selectedMonth, reportData, performanceRowsByMonth, narrativesByMonth]);
 
-            const handleUploadLightdashData = () => runActionWithProgress('lightdash', async () => {
+            const uploadLightdashDataStep = async () => {
                 const { rows, source } = await loadRowsFromGoogleOrCache(LIGHTDASH_SHEET_ID, null, null);
                 if (rows.length < 2) throw new Error('No Lightdash rows were found in the Google Sheet.');
                 const finalData = processCSVText(sheetRowsToCSV(rows));
-                return `Uploaded ${finalData.length.toLocaleString()} Lightdash rows from ${source}.`;
-            });
+                const months = [...new Set(finalData.map(d => d.date))].sort().reverse();
+                const monthValue = months[0] || 'No Date';
+                return {
+                    dataRows: finalData,
+                    months,
+                    monthValue,
+                    message: `Uploaded ${finalData.length.toLocaleString()} Lightdash rows from ${source}.`
+                };
+            };
 
-            const handleUploadPerformanceUpdates = () => runActionWithProgress('updates', async () => {
-                if (!rawData.length || !reportData) throw new Error('Upload Lightdash data first so the tool can choose the correct month tab.');
-                const months = reportMonths.length ? reportMonths : [selectedMonth];
+            const uploadPerformanceUpdatesStep = async ({ dataRows = rawData, months: monthsOverride = reportMonths, monthValue = selectedMonth } = {}) => {
+                const currentReportData = buildReportDataForMonth(monthValue, dataRows);
+                if (!dataRows.length || !currentReportData) throw new Error('Upload Lightdash data first so the tool can choose the correct month tab.');
+                const months = monthsOverride.length ? monthsOverride : [monthValue];
                 const loadedRowsByMonth = {};
                 const loadedTabsByMonth = {};
                 let sourceName = 'Wise data bridge';
@@ -1209,26 +1265,31 @@
                 }
 
                 if (!loadedViaBridgeIndex) {
-                    for (const month of months) {
-                        if (loadedRowsByMonth[month]) continue;
-                        try {
-                            const { rows, source, tabName } = await loadPerformanceUpdateRows(month);
-                            loadedRowsByMonth[month] = rows;
-                            loadedTabsByMonth[month] = tabName;
-                            sourceName = source || sourceName;
-                        } catch (err) {
-                            console.warn(err);
+                    const fallbackResults = await Promise.allSettled(months.map(async month => {
+                        if (loadedRowsByMonth[month]) return null;
+                        const { rows, source, tabName } = await loadPerformanceUpdateRows(month);
+                        return { month, rows, source, tabName };
+                    }));
+                    fallbackResults.forEach(result => {
+                        if (result.status !== 'fulfilled' || !result.value) {
+                            if (result.status === 'rejected') console.warn(result.reason);
+                            return;
                         }
-                    }
+                        const { month, rows, source, tabName } = result.value;
+                        loadedRowsByMonth[month] = rows;
+                        loadedTabsByMonth[month] = tabName;
+                        sourceName = source || sourceName;
+                    });
                 }
 
-                if (!loadedRowsByMonth[selectedMonth]) {
-                    throw new Error(`No Performance Updates tab was found for ${getPerformanceUpdateTabName(selectedMonth)}. Check the tab name in the Performance Updates Sheet.`);
+                if (!loadedRowsByMonth[monthValue]) {
+                    throw new Error(`No Performance Updates tab was found for ${getPerformanceUpdateTabName(monthValue)}. Check the tab name in the Performance Updates Sheet.`);
                 }
 
                 const builtNarrativesByMonth = {};
                 Object.entries(loadedRowsByMonth).forEach(([month, rows]) => {
-                    const monthContext = getMonthlyReportContext(month);
+                    const monthReportData = buildReportDataForMonth(month, dataRows);
+                    const monthContext = getMonthlyReportContext(month, monthReportData);
                     if (!monthContext) return;
                     const updateNarratives = cleanupNarratives(buildNarrativesFromUpdateRows(rows, month, monthContext));
                     if (Object.keys(updateNarratives).length) {
@@ -1236,21 +1297,26 @@
                     }
                 });
 
-                const selectedTabName = loadedTabsByMonth[selectedMonth];
-                if (!builtNarrativesByMonth[selectedMonth]) {
+                const selectedTabName = loadedTabsByMonth[monthValue];
+                if (!builtNarrativesByMonth[monthValue]) {
                     throw new Error(`No usable updates were found in the ${selectedTabName} tab. Check the tab name and column labels.`);
                 }
 
                 setPerformanceRowsByMonth(prev => ({ ...prev, ...loadedRowsByMonth }));
                 setPerformanceTabsByMonth(prev => ({ ...prev, ...loadedTabsByMonth }));
                 setNarrativesByMonth(prev => ({ ...prev, ...builtNarrativesByMonth }));
-                setNarratives(builtNarrativesByMonth[selectedMonth]);
-                setNarrativeMonth(selectedMonth);
+                setNarratives(builtNarrativesByMonth[monthValue]);
+                setNarrativeMonth(monthValue);
                 const loadedCount = Object.keys(loadedRowsByMonth).length;
                 const preparedCount = Object.keys(builtNarrativesByMonth).length;
                 const skippedCount = Math.max(0, months.length - loadedCount);
-                return `Uploaded all Performance Updates from ${sourceName}. Prepared ${preparedCount} month report${preparedCount === 1 ? '' : 's'}${skippedCount ? `; skipped ${skippedCount} month${skippedCount === 1 ? '' : 's'} without tabs` : ''}.`;
-            });
+                return {
+                    loadedRowsByMonth,
+                    loadedTabsByMonth,
+                    builtNarrativesByMonth,
+                    message: `Uploaded all Performance Updates from ${sourceName}. Prepared ${preparedCount} month report${preparedCount === 1 ? '' : 's'}${skippedCount ? `; skipped ${skippedCount} month${skippedCount === 1 ? '' : 's'} without tabs` : ''}.`
+                };
+            };
 
             const splitNotes = (text) => cleanUpdateText(text)
                 .split(/\n+|[.!?]\s+/)
@@ -1529,8 +1595,8 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                 }
             };
 
-            const generateMonthlySummaries = async (sourceNarratives = narratives, monthValue = selectedMonth) => {
-                const reportContext = getMonthlyReportContext(monthValue);
+            const generateMonthlySummaries = async (sourceNarratives = narratives, monthValue = selectedMonth, reportDataOverride = null) => {
+                const reportContext = getMonthlyReportContext(monthValue, reportDataOverride);
                 if (!reportContext?.reportData) return false;
                 const cleaned = cleanupNarratives(sourceNarratives);
                 try {
@@ -1555,6 +1621,20 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                 }
             };
 
+            const runWithConcurrency = async (items, limit, worker) => {
+                const results = new Array(items.length);
+                let nextIndex = 0;
+                const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+                    while (nextIndex < items.length) {
+                        const currentIndex = nextIndex;
+                        nextIndex += 1;
+                        results[currentIndex] = await worker(items[currentIndex], currentIndex);
+                    }
+                });
+                await Promise.all(workers);
+                return results;
+            };
+
             const regenerateMonthlySummaries = () => {
                 setIsSyncing(true);
                 window.setTimeout(async () => {
@@ -1567,22 +1647,160 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                 }, 250);
             };
 
-            const handleGenerateMonthlyReport = () => runActionWithProgress('report', async () => {
-                if (!rawData.length || !reportData) throw new Error('Upload Lightdash data first.');
-                const monthsToGenerate = reportMonths.filter(month => narrativesByMonth[month] || performanceRowsByMonth[month]);
-                const targetMonths = monthsToGenerate.length ? monthsToGenerate : [selectedMonth];
-                let usedAI = 0;
-                let usedLocal = 0;
+            const formatSlackList = (items) => {
+                const filtered = items.filter(Boolean);
+                if (filtered.length <= 1) return filtered.join('');
+                if (filtered.length === 2) return `${filtered[0]} and ${filtered[1]}`;
+                return `${filtered.slice(0, -1).join(', ')}, and ${filtered[filtered.length - 1]}`;
+            };
 
-                for (const month of targetMonths) {
-                    const sourceNarratives = narrativesByMonth[month]
-                        || cleanupNarratives(buildNarrativesFromUpdateRows(performanceRowsByMonth[month] || [], month));
-                    const message = await generateMonthlySummaries(sourceNarratives, month);
-                    if (!message) throw new Error(`Could not generate summaries for ${month}.`);
-                    if (message.includes('AI summaries')) usedAI += 1;
-                    else usedLocal += 1;
+            const splitSummarySentences = (value) => fixCommonText(value)
+                .replace(/\n+/g, ' ')
+                .split(/(?<=[.!?])\s+/)
+                .map(sentence => sentence.trim())
+                .filter(Boolean);
+
+            const trimSummaryText = (value, maxLength = 260) => {
+                const text = String(value || '').replace(/\s+/g, ' ').trim();
+                if (text.length <= maxLength) return text;
+                const cut = text.slice(0, maxLength);
+                const lastSpace = cut.lastIndexOf(' ');
+                return `${cut.slice(0, lastSpace > 120 ? lastSpace : maxLength).replace(/[,\s]+$/, '')}.`;
+            };
+
+            const getSummaryStory = (value, maxLength = 270) => {
+                const kpiPattern = /\b(concluded|drove [\d,.]+ MNCs|payback with an LTV|with a total spend|resulted in a payback|month payback with an LTV)\b/i;
+                const actionPattern = /\b(scale|scaled|scaling|test|incrementality|conversion lift|launched|maintained|stable|budget|creative|World Cup|CTV|Spotify|full-funnel|targeting|turned off|reactivate|record|calibration|payback|LTV|CPA)\b/i;
+                const sentences = splitSummarySentences(value).filter(sentence => sentence.length > 22 && !kpiPattern.test(sentence));
+                const priority = sentences.filter(sentence => actionPattern.test(sentence));
+                const picked = (priority.length ? priority : sentences).slice(0, 2).join(' ');
+                return trimSummaryText(picked, maxLength);
+            };
+
+            const getSummaryPlan = (value, maxLength = 255) => {
+                const lines = normalizePlanText(value)
+                    .split(/\n+/)
+                    .map(line => line.trim())
+                    .filter(Boolean);
+                return trimSummaryText(lines.slice(0, 2).join(' '), maxLength);
+            };
+
+            const buildSlackSummaryText = () => {
+                if (!reportData || !globalHeadline) return '';
+                const monthLabel = formatFullMonthYear(selectedMonth);
+                const nextMonthLabel = formatNextFullMonthYear(selectedMonth);
+                const topDrivers = [...reportData.regions]
+                    .filter(region => region.stats.mncs > 0)
+                    .sort((a, b) => b.stats.mncs - a.stats.mncs)
+                    .slice(0, 3);
+                const driverFlags = topDrivers.map(region => REGION_SLACK_FLAGS[region.name] || '').join('');
+                const driverNames = formatSlackList(topDrivers.map(region => region.name));
+                const summaryRegions = reportData.regions.filter(region => region.stats.mncs > 0 || activeNarratives[`${region.name}_perf`] || activeNarratives[`${region.name}_plan`]);
+                const highlightLines = summaryRegions.map(region => {
+                    const paybackText = region.stats.payback > 0.05 ? ` at a ${region.stats.payback.toFixed(1)}m payback` : '';
+                    const story = getSummaryStory(activeNarratives[`${region.name}_perf`] || getRegionalPerformanceBase(region, {}, currentReportContext));
+                    return `${region.name}: Concluded with ${formatSlackRegionMncs(region.stats.mncs)} MNCs${paybackText}.${story ? ` ${story}` : ''}`;
+                });
+                const planLines = summaryRegions
+                    .map(region => {
+                        const plan = getSummaryPlan(activeNarratives[`${region.name}_plan`] || '');
+                        return plan ? `${region.name}: ${plan}` : '';
+                    })
+                    .filter(Boolean);
+                const weekday = new Date().toLocaleDateString('en-GB', { weekday: 'long' });
+
+                return [
+                    `Hey! Happy ${weekday}! :pikachu_wave:`,
+                    '',
+                    `Sharing the Paid Display ${monthLabel} Monthly Report.`,
+                    '',
+                    ':sparkles:Key Highlights:',
+                    '',
+                    `:rocket:Paid Display drove ${Math.round(globalHeadline.stats.mncs).toLocaleString()} MNCs at a ${globalHeadline.stats.payback.toFixed(1)}m payback.`,
+                    `${driverFlags} Our main conversion drivers were ${driverNames}.`,
+                    '',
+                    '',
+                    `:test_tube: Main Highlights from ${getMoName(selectedMonth)}:`,
+                    '',
+                    ...highlightLines,
+                    '',
+                    '',
+                    `:schedule-1: ${nextMonthLabel.split(' ')[0]} Plans:`,
+                    '',
+                    ...(planLines.length ? planLines : ['Plans are still being finalized for this month.']),
+                    '',
+                    '',
+                    'Feel free to leave a comment or reach out to @paiddisplay on #askdisplay if you have any questions!'
+                ].join('\n');
+            };
+
+            const copyTextToClipboard = async (text) => {
+                if (navigator.clipboard?.writeText) {
+                    await navigator.clipboard.writeText(text);
+                    return;
                 }
 
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.setAttribute('readonly', '');
+                textarea.style.position = 'fixed';
+                textarea.style.left = '-9999px';
+                textarea.style.top = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                const copied = document.execCommand('copy');
+                textarea.remove();
+                if (!copied) throw new Error('Clipboard copy failed.');
+            };
+
+            const handleCopySummary = async () => {
+                const summaryText = buildSlackSummaryText();
+                if (!summaryText) return;
+
+                try {
+                    await copyTextToClipboard(summaryText);
+                    setSummaryCopied(true);
+                    window.setTimeout(() => setSummaryCopied(false), 1800);
+                } catch (error) {
+                    console.error(error);
+                    window.alert('Could not copy the summary automatically. Please try again from Chrome.');
+                }
+            };
+
+            const handleGenerateMonthlyReport = () => runActionWithProgress('report', async (setProgress) => {
+                if (!apiKey.trim()) throw new Error('Add the API KEY before generating the report.');
+
+                setProgress(5, 'Uploading Lightdash data from Wise data bridge...');
+                const lightdashResult = await uploadLightdashDataStep();
+
+                setProgress(28, 'Uploading Performance Updates from Wise data bridge...');
+                const updatesResult = await uploadPerformanceUpdatesStep(lightdashResult);
+
+                setProgress(55, 'Generating summaries for available months...');
+                const monthsToGenerate = lightdashResult.months.filter(month => updatesResult.builtNarrativesByMonth[month] || updatesResult.loadedRowsByMonth[month]);
+                const targetMonths = monthsToGenerate.length ? monthsToGenerate : [lightdashResult.monthValue];
+                let usedAI = 0;
+                let usedLocal = 0;
+                let completedMonths = 0;
+
+                const messages = await runWithConcurrency(targetMonths, SUMMARY_GENERATION_CONCURRENCY, async (month) => {
+                    const monthReportData = buildReportDataForMonth(month, lightdashResult.dataRows);
+                    const monthContext = getMonthlyReportContext(month, monthReportData);
+                    const sourceNarratives = updatesResult.builtNarrativesByMonth[month]
+                        || cleanupNarratives(buildNarrativesFromUpdateRows(updatesResult.loadedRowsByMonth[month] || [], month, monthContext));
+                    const message = await generateMonthlySummaries(sourceNarratives, month, monthReportData);
+                    if (!message) throw new Error(`Could not generate summaries for ${month}.`);
+                    completedMonths += 1;
+                    setProgress(58 + (completedMonths / Math.max(1, targetMonths.length)) * 36, `Generated ${completedMonths}/${targetMonths.length} monthly reports...`);
+                    return message;
+                });
+
+                messages.forEach(message => {
+                    if (message.includes('AI summaries')) usedAI += 1;
+                    else usedLocal += 1;
+                });
+
+                setProgress(96, 'Opening latest report...');
                 setSetupComplete(true);
                 return `Generated ready-to-export reports for ${targetMonths.length} month${targetMonths.length === 1 ? '' : 's'}${usedAI ? ` with AI summaries for ${usedAI}` : ''}${usedLocal ? ` and local drafts for ${usedLocal}` : ''}.`;
             });
@@ -1607,7 +1825,7 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
 
             const ActionButton = ({ actionKey, idleLabel, loadingLabel, doneLabel, onClick, disabled = false, icon }) => {
                 const state = actionState[actionKey];
-                const label = state.status === 'loading' ? loadingLabel : (state.status === 'done' ? doneLabel : idleLabel);
+                const label = state.status === 'loading' ? `${state.progress}% ${loadingLabel}` : (state.status === 'done' ? doneLabel : idleLabel);
                 const active = state.status === 'loading' || state.status === 'done';
                 const buttonStyle = active
                     ? { background: `linear-gradient(90deg, #9FE870 ${state.progress}%, rgba(255,255,255,0.10) ${state.progress}%)` }
@@ -1661,29 +1879,12 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                     className="w-full py-5 px-8 rounded-[2rem] bg-white/10 text-white placeholder-white/60 border border-white/10 outline-none font-black uppercase text-sm tracking-widest text-center focus:bg-white/15 focus:border-wise-fast/60"
                                 />
                                 <ActionButton
-                                    actionKey="lightdash"
-                                    idleLabel="Upload Lightdash Data"
-                                    loadingLabel="Uploading Lightdash Data"
-                                    doneLabel="Lightdash Data Uploaded"
-                                    onClick={handleUploadLightdashData}
-                                    icon={<Icons.Chart size={18} />}
-                                />
-                                <ActionButton
-                                    actionKey="updates"
-                                    idleLabel="Upload Performance Updates"
-                                    loadingLabel="Uploading Performance Updates"
-                                    doneLabel="Performance Updates Uploaded"
-                                    onClick={handleUploadPerformanceUpdates}
-                                    disabled={!rawData.length}
-                                    icon={<Icons.Calendar size={18} />}
-                                />
-                                <ActionButton
                                     actionKey="report"
-                                    idleLabel="Generate Monthly Report"
-                                    loadingLabel="Generating Monthly Report"
-                                    doneLabel="Monthly Report Generated"
+                                    idleLabel="Generate Report"
+                                    loadingLabel="Generating Report"
+                                    doneLabel="Report Generated"
                                     onClick={handleGenerateMonthlyReport}
-                                    disabled={!rawData.length || !apiKey.trim()}
+                                    disabled={!apiKey.trim()}
                                     icon={<Icons.Zap size={18} />}
                                 />
                             </div>
@@ -1703,6 +1904,7 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                             <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="bg-white/10 border border-white/20 text-white font-bold text-xs px-6 py-3 rounded-2xl outline-none">
                                 {reportMonths.map(d => <option key={d} value={d} className="text-black">{d}</option>)}
                             </select>
+                            <button onClick={handleCopySummary} className="bg-wise-fast text-wise-forest px-8 py-3 rounded-2xl font-black text-xs uppercase hover:bg-[#b9ff8a] shadow-2xl transition-transform active:scale-95">{summaryCopied ? 'Summary Copied' : 'Copy Summary'}</button>
                             <button onClick={() => window.print()} className="bg-white text-wise-forest px-10 py-3 rounded-2xl font-black text-xs uppercase hover:bg-slate-50 shadow-2xl transition-transform active:scale-95">Export Deck</button>
                         </div>
                     </nav>
