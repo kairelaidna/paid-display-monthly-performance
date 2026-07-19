@@ -105,6 +105,11 @@
                 font-size: var(--plan-font-size, 11px) !important;
                 line-height: var(--plan-line-height, 1.4) !important;
             }
+
+            textarea.presentation-textarea {
+                font-size: var(--presentation-font-size, 22px) !important;
+                line-height: var(--presentation-line-height, 1.85) !important;
+            }
             
             textarea[class*="text-lg"] {
                 font-size: 14px !important;
@@ -119,6 +124,155 @@
         .plan-textarea {
             font-size: var(--plan-font-size, 13px);
             line-height: var(--plan-line-height, 1.6);
+        }
+
+        .narrative-textarea {
+            font-size: var(--narrative-font-size, 14px);
+            line-height: var(--narrative-line-height, 1.6);
+        }
+
+        .story-panel {
+            border-radius: 1.35rem;
+            padding: 1.25rem 1.35rem;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            border: 1px solid var(--panel-border, rgba(22, 51, 0, 0.12));
+            box-shadow: none !important;
+        }
+
+        .story-panel::before {
+            display: none;
+        }
+
+        .story-panel-dark {
+            background: var(--panel-dark, linear-gradient(135deg, #0d2600 0%, #163300 58%, #214f05 100%));
+            color: white;
+        }
+
+        .story-panel-light {
+            background: linear-gradient(135deg, var(--panel-soft, #f5ffed) 0%, #ffffff 100%);
+            color: #163300;
+            border: 1px solid var(--panel-border, rgba(22, 51, 0, 0.10));
+        }
+
+        .story-panel-tinted {
+            background: linear-gradient(135deg, var(--panel-soft, #f8fafc) 0%, #ffffff 100%);
+            color: #163300;
+            border: 1px solid var(--panel-border, rgba(15, 23, 42, 0.08));
+        }
+
+        .story-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            margin-bottom: 0.95rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .story-panel-title {
+            display: block;
+            font-size: 0.82rem;
+            line-height: 1;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            color: var(--panel-accent, #9FE870);
+        }
+
+        .story-panel-kicker {
+            display: none;
+        }
+
+        .story-copy {
+            font-size: var(--narrative-font-size, 14px);
+            line-height: var(--narrative-line-height, 1.6);
+            font-weight: 450;
+            position: relative;
+            z-index: 2;
+            overflow: hidden;
+        }
+
+        .story-copy p {
+            margin: 0 0 0.78em;
+        }
+
+        .story-copy p:first-child {
+            font-size: 1.06em;
+            line-height: 1.45;
+            font-weight: 800;
+        }
+
+        .story-copy p:last-child {
+            margin-bottom: 0;
+        }
+
+        .story-panel-dark .story-copy {
+            color: rgba(255, 255, 255, 0.92);
+        }
+
+        .story-panel-light .story-copy,
+        .story-panel-tinted .story-copy {
+            color: rgba(22, 51, 0, 0.84);
+        }
+
+        .plan-list {
+            display: flex;
+            flex-direction: column;
+            gap: clamp(0.85rem, calc(var(--plan-font-size, 14px) * 0.48), 1.35rem);
+            font-size: var(--plan-font-size, 13px);
+            line-height: var(--plan-line-height, 1.54);
+            position: relative;
+            z-index: 2;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        .plan-item {
+            margin: 0;
+            display: grid;
+            grid-template-columns: 0.92rem 1fr;
+            column-gap: 0.48rem;
+            align-items: start;
+            color: rgba(22, 51, 0, 0.84);
+            font-weight: 400;
+        }
+
+        .plan-item::before {
+            content: "";
+            display: block;
+            width: 0.38rem;
+            height: 0.38rem;
+            margin-top: 0.62em;
+            justify-self: center;
+            border-radius: 999px;
+            background: var(--panel-accent, #9FE870);
+            box-shadow: 0 0 0 4px color-mix(in srgb, var(--panel-accent, #9FE870) 12%, transparent);
+        }
+
+        .story-panel-dark .plan-item {
+            color: rgba(255, 255, 255, 0.92);
+        }
+
+        .split-panel {
+            border: 1px solid var(--panel-border, rgba(22, 51, 0, 0.12));
+            box-shadow: none !important;
+        }
+
+        .report-note {
+            color: #7AC94D;
+            font-style: normal;
+            font-weight: 800;
+        }
+
+        @media print {
+            textarea.narrative-textarea {
+                font-size: var(--narrative-font-size, 12px) !important;
+                line-height: var(--narrative-line-height, 1.45) !important;
+            }
         }
 
         textarea::-webkit-scrollbar { width: 5px; }
@@ -151,13 +305,53 @@
         const REGIONAL_NARRATIVE_SEQUENCE = [PLATFORM_SEQUENCE[0], PLATFORM_SEQUENCE[2], PLATFORM_SEQUENCE[1]];
         const OVERALL_PLATFORMS_UI = PLATFORM_SEQUENCE.map(platform => platform.statName);
         const CORE_PLATFORMS_UI = CORE_PLATFORM_SEQUENCE.map(platform => platform.statName);
+        const PLATFORM_THEMES = {
+            GAC: { accent: '#FFA500', soft: '#fff8eb', muted: '#f59e0b' },
+            MOLOCO: { accent: '#2C7CF5', soft: '#eef5ff', muted: '#2563eb' },
+            TTD: { accent: '#1d9ad6', soft: '#ecf7fd', muted: '#0284c7' },
+            AVOW: { accent: '#7c3aed', soft: '#f5f3ff', muted: '#6d28d9' }
+        };
+        const PLATFORM_PANEL_TONES = {
+            GAC: {
+                regionGradient: 'linear-gradient(135deg, #ffe9c6 0%, #fff4e2 54%, #ffffff 100%)',
+                metricGradient: 'linear-gradient(135deg, #fff1d6 0%, #fff8ec 58%, #ffffff 100%)',
+                darkGradient: 'linear-gradient(135deg, #d46f00 0%, #f59b00 58%, #ffb238 100%)',
+                performanceSoft: '#fff3df',
+                plansSoft: '#fffaf2',
+                border: '#FFB23826'
+            },
+            MOLOCO: {
+                regionGradient: 'linear-gradient(135deg, #deecff 0%, #f0f7ff 52%, #ffffff 100%)',
+                metricGradient: 'linear-gradient(135deg, #e4f0ff 0%, #f2f8ff 56%, #ffffff 100%)',
+                darkGradient: 'linear-gradient(135deg, #082a63 0%, #155fd0 55%, #2C7CF5 100%)',
+                performanceSoft: '#edf5ff',
+                plansSoft: '#fbfdff',
+                border: '#2C7CF533'
+            },
+            TTD: {
+                regionGradient: 'linear-gradient(135deg, #d8f3ff 0%, #eefaff 52%, #ffffff 100%)',
+                metricGradient: 'linear-gradient(135deg, #dff6ff 0%, #f0fbff 56%, #ffffff 100%)',
+                darkGradient: 'linear-gradient(135deg, #043044 0%, #0b78ac 55%, #1d9ad6 100%)',
+                performanceSoft: '#eaf9ff',
+                plansSoft: '#fbfeff',
+                border: '#1d9ad633'
+            },
+            AVOW: {
+                regionGradient: 'linear-gradient(135deg, #e8e0ff 0%, #f4f0ff 52%, #ffffff 100%)',
+                metricGradient: 'linear-gradient(135deg, #eee7ff 0%, #f7f3ff 56%, #ffffff 100%)',
+                darkGradient: 'linear-gradient(135deg, #35156f 0%, #6230c6 55%, #7c3aed 100%)',
+                performanceSoft: '#f4f0ff',
+                plansSoft: '#fcfbff',
+                border: '#7c3aed33'
+            }
+        };
         const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
         const REGION_SLACK_FLAGS = {
             LATAM: ':flag-br:',
             NORTHAM: ':us:',
-            EUROPE: ':eu-flag:',
+            EUROPE: ':flag-eu:',
             ASIA: ':flag-my:',
-            PACIFIC: ':flag-au:',
+            PACIFIC: ':aus:',
             GBR: ':flag-gb:',
             MEA: ':flag-tr:'
         };
@@ -244,6 +438,31 @@
             if (key.includes('moloco')) return PLATFORM_SEQUENCE.find(platform => platform.key === 'MOLOCO');
             if (key.includes('avow')) return PLATFORM_SEQUENCE.find(platform => platform.key === 'AVOW');
             return PLATFORM_SEQUENCE.find(platform => normalizePlatformLookup(platform.statName) === key || platform.key.toLowerCase() === key) || null;
+        };
+
+        const getPlatformTheme = (value) => {
+            const meta = getPlatformMeta(value);
+            return PLATFORM_THEMES[meta?.key] || { accent: '#163300', soft: '#f8fafc', muted: '#475569' };
+        };
+
+        const getPlatformPanelTone = (value) => {
+            const meta = getPlatformMeta(value);
+            return PLATFORM_PANEL_TONES[meta?.key] || {
+                regionGradient: 'linear-gradient(135deg, #eef5ea 0%, #f7fbf5 55%, #ffffff 100%)',
+                metricGradient: 'linear-gradient(135deg, #eef5ea 0%, #f7fbf5 55%, #ffffff 100%)',
+                darkGradient: 'linear-gradient(135deg, #0d2600 0%, #163300 58%, #214f05 100%)',
+                performanceSoft: '#f3f8f0',
+                plansSoft: '#fbfdf9',
+                border: 'rgba(22, 51, 0, 0.16)'
+            };
+        };
+
+        const getPlatformMetricCardStyle = (value) => {
+            const tone = getPlatformPanelTone(value);
+            return {
+                background: tone.metricGradient,
+                borderColor: tone.border
+            };
         };
 
         const parseCSVRows = (text, delimiter) => {
@@ -423,7 +642,7 @@
             );
         };
 
-        const MetricCard = ({ title, val, mom, yoy, inverse = false, rawVal, mainColor = 'text-wise-forest', labelColor = 'text-wise-forest/70' }) => {
+        const MetricCard = ({ title, val, mom, yoy, inverse = false, rawVal, mainColor = 'text-slate-950', labelColor = 'text-wise-forest/70', cardStyle = null }) => {
             const formatPct = (v) => (Math.abs(v) * 100).toFixed(1) + '%';
             const getColor = (v) => {
                 if (v === undefined || v === null || v === 0 || !isFinite(v)) return 'text-slate-400';
@@ -438,9 +657,13 @@
                 return good ? 'text-green-600' : 'text-[#d32f2f]'; 
             };
             const getSign = (v) => (v > 0 ? '+' : v < 0 ? '-' : '');
+            const wiseTone = !cardStyle && (mainColor === 'text-[#7AC94D]' || mainColor === 'text-wise-forest' || mainColor === 'text-slate-950');
 
             return (
-                <div className="bg-[#f2f2f2] rounded-[1rem] py-1.5 px-1.5 flex flex-col justify-center items-center min-w-[95px] flex-1 text-center shadow-sm">
+                <div
+                    className={`${wiseTone ? 'bg-[#f4ffed] border-[#9FE870]/30' : 'bg-[#f7f8f6] border-slate-100'} border rounded-[1rem] py-1.5 px-1.5 flex flex-col justify-center items-center min-w-[95px] flex-1 text-center`}
+                    style={cardStyle || undefined}
+                >
                     <span className={`${labelColor} font-bold text-[10px] uppercase tracking-widest mb-0.5`}>{title}</span>
                     <span className={`${mainColor} font-black text-2xl tracking-tighter mb-1 leading-none`}>{val}</span>
                     <div className="flex flex-col items-center gap-0 text-[8px] font-bold">
@@ -1065,30 +1288,82 @@
             const getPlanTextStyle = (value, variant = 'standard') => {
                 const text = String(value || '');
                 const nonEmptyLines = text.split('\n').map(line => line.trim()).filter(Boolean);
-                const approxCharsPerLine = variant === 'large' ? 38 : variant === 'regional' ? 64 : 70;
+                const approxCharsPerLine = variant === 'large' ? 34 : variant === 'regional' ? 62 : 68;
                 const visualLines = nonEmptyLines.reduce((sum, line) => sum + Math.max(1, Math.ceil(line.length / approxCharsPerLine)), 0);
                 const paragraphGaps = Math.max(0, text.split(/\n\s*\n/).filter(chunk => chunk.trim()).length - 1);
                 const fitScore = visualLines + paragraphGaps;
-                let fontSize = variant === 'large' ? 15 : variant === 'regional' ? 14 : 13;
-                let lineHeight = variant === 'large' ? 1.5 : variant === 'regional' ? 1.55 : 1.6;
+                let fontSize = variant === 'large' ? 20 : variant === 'regional' ? 15 : 14;
+                let lineHeight = variant === 'large' ? 1.7 : variant === 'regional' ? 1.58 : 1.62;
 
-                if (fitScore > 22 || text.length > 1200) {
-                    fontSize = 9;
-                    lineHeight = 1.25;
-                } else if (fitScore > 18 || text.length > 950) {
-                    fontSize = 10;
-                    lineHeight = 1.3;
-                } else if (fitScore > 14 || text.length > 720) {
+                if (variant === 'large') {
+                    if (fitScore > 12 || text.length > 520) {
+                        fontSize = 16;
+                        lineHeight = 1.55;
+                    }
+                } else if (fitScore > 24 || text.length > 1250) {
                     fontSize = 11;
-                    lineHeight = 1.35;
-                } else if (fitScore > 10 || text.length > 520) {
+                    lineHeight = 1.36;
+                } else if (fitScore > 19 || text.length > 980) {
                     fontSize = 12;
-                    lineHeight = 1.45;
+                    lineHeight = 1.42;
+                } else if (fitScore > 14 || text.length > 760) {
+                    fontSize = 13;
+                    lineHeight = 1.5;
+                } else if (fitScore > 10 || text.length > 560) {
+                    fontSize = variant === 'regional' ? 14 : 13;
+                    lineHeight = 1.54;
                 }
 
                 return {
                     '--plan-font-size': `${fontSize}px`,
                     '--plan-line-height': lineHeight
+                };
+            };
+
+            const getNarrativeTextStyle = (value, variant = 'standard') => {
+                const text = String(value || '');
+                const nonEmptyLines = text.split('\n').map(line => line.trim()).filter(Boolean);
+                const approxCharsPerLine = variant === 'regional' ? 46 : 70;
+                const visualLines = nonEmptyLines.reduce((sum, line) => sum + Math.max(1, Math.ceil(line.length / approxCharsPerLine)), 0);
+                const paragraphGaps = Math.max(0, text.split(/\n\s*\n/).filter(chunk => chunk.trim()).length - 1);
+                const fitScore = visualLines + paragraphGaps;
+                let fontSize = variant === 'regional' ? 16 : 15;
+                let lineHeight = variant === 'regional' ? 1.58 : 1.62;
+
+                if (variant === 'regional') {
+                    if (fitScore > 42 || text.length > 1800) {
+                        fontSize = 11;
+                        lineHeight = 1.32;
+                    } else if (fitScore > 36 || text.length > 1550) {
+                        fontSize = 12;
+                        lineHeight = 1.38;
+                    } else if (fitScore > 31 || text.length > 1300) {
+                        fontSize = 13;
+                        lineHeight = 1.44;
+                    } else if (fitScore > 26 || text.length > 1050) {
+                        fontSize = 14;
+                        lineHeight = 1.5;
+                    } else if (fitScore > 21 || text.length > 840) {
+                        fontSize = 15;
+                        lineHeight = 1.54;
+                    }
+                } else if (fitScore > 34 || text.length > 1800) {
+                    fontSize = 11;
+                    lineHeight = 1.34;
+                } else if (fitScore > 28 || text.length > 1450) {
+                    fontSize = 12;
+                    lineHeight = 1.42;
+                } else if (fitScore > 22 || text.length > 1100) {
+                    fontSize = 13;
+                    lineHeight = 1.5;
+                } else if (fitScore > 17 || text.length > 820) {
+                    fontSize = 14;
+                    lineHeight = 1.56;
+                }
+
+                return {
+                    '--narrative-font-size': `${fontSize}px`,
+                    '--narrative-line-height': lineHeight
                 };
             };
 
@@ -1599,6 +1874,16 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                 const reportContext = getMonthlyReportContext(monthValue, reportDataOverride);
                 if (!reportContext?.reportData) return false;
                 const cleaned = cleanupNarratives(sourceNarratives);
+                if (!apiKey.trim()) {
+                    const generated = cleanupNarratives(buildLocalMonthlySummaries(cleaned, reportContext));
+                    const nextNarratives = { ...cleaned, ...generated };
+                    if (monthValue === selectedMonth) {
+                        setNarratives(nextNarratives);
+                        setNarrativeMonth(selectedMonth);
+                    }
+                    setNarrativesByMonth(prev => ({ ...prev, [monthValue]: nextNarratives }));
+                    return 'Monthly report generated with local summary draft for internal preview.';
+                }
                 try {
                     const generated = await generateOpenAISummaries(cleaned, reportContext);
                     const nextNarratives = { ...cleaned, ...generated };
@@ -1768,8 +2053,6 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
             };
 
             const handleGenerateMonthlyReport = () => runActionWithProgress('report', async (setProgress) => {
-                if (!apiKey.trim()) throw new Error('Add the API KEY before generating the report.');
-
                 setProgress(5, 'Uploading Lightdash data from Wise data bridge...');
                 const lightdashResult = await uploadLightdashDataStep();
 
@@ -1827,9 +2110,7 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                 const state = actionState[actionKey];
                 const label = state.status === 'loading' ? `${state.progress}% ${loadingLabel}` : (state.status === 'done' ? doneLabel : idleLabel);
                 const active = state.status === 'loading' || state.status === 'done';
-                const buttonStyle = active
-                    ? { background: `linear-gradient(90deg, #9FE870 ${state.progress}%, rgba(255,255,255,0.10) ${state.progress}%)` }
-                    : {};
+                const progressWidth = active ? `${Math.max(0, Math.min(100, state.status === 'done' ? 100 : state.progress))}%` : '0%';
 
                 return (
                     <div>
@@ -1837,9 +2118,12 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                             type="button"
                             onClick={onClick}
                             disabled={disabled || state.status === 'loading'}
-                            style={buttonStyle}
-                            className={`relative block w-full py-5 rounded-[2rem] font-black uppercase text-sm tracking-widest transition-all border border-white/10 overflow-hidden ${active ? 'text-wise-forest' : 'bg-white/10 text-white'} ${disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white/20 hover:scale-[1.02] active:scale-95'}`}
+                            className={`relative block w-full py-5 rounded-[2rem] font-black uppercase text-sm tracking-widest transition-all border border-white/10 overflow-hidden bg-white/10 ${active ? 'text-wise-forest' : 'text-white'} ${disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-white/20 hover:scale-[1.02] active:scale-95'}`}
                         >
+                            <span
+                                className="absolute inset-y-0 left-0 bg-wise-fast transition-[width] duration-300 ease-out"
+                                style={{ width: progressWidth }}
+                            />
                             <span className="relative z-10 flex items-center justify-center gap-3">
                                 {state.status === 'loading' ? <Icons.Loader size={18} /> : icon}
                                 {label}
@@ -1860,6 +2144,72 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                 setNarrativesByMonth(prev => ({ ...prev, [selectedMonth]: next }));
             };
 
+            const splitNarrativeBlocks = (value) => fixCommonText(value || '')
+                .split(/\n\s*\n/)
+                .map(block => block.trim())
+                .filter(Boolean);
+
+            const splitPlanItems = (value) => normalizePlanText(value || '')
+                .split(/\n\s*\n/)
+                .map(item => item.trim())
+                .filter(Boolean);
+
+            const formatTeamSlideText = (value) => fixCommonText(value || '')
+                .split('\n')
+                .map(line => {
+                    const trimmed = line.trim();
+                    if (!trimmed) return '';
+                    return trimmed
+                        .replace(/^\s*[•·]\s*/, '')
+                        .replace(/[.。]+\s*$/, '')
+                        .trim();
+                })
+                .join('\n');
+
+            const PerformancePanel = ({ value, variant = 'standard', tone = 'dark', accent = '#9FE870', soft, darkGradient, title = 'Performance', className = 'flex-1' }) => {
+                const blocks = splitNarrativeBlocks(value);
+                const style = {
+                    ...getNarrativeTextStyle(value, variant),
+                    '--panel-accent': accent,
+                    '--panel-soft': soft || '#f8fafc',
+                    '--panel-dark': darkGradient || 'linear-gradient(135deg, #0d2600 0%, #163300 58%, #214f05 100%)',
+                    '--panel-border': `${accent}33`
+                };
+                const toneClass = tone === 'dark' ? 'story-panel-dark' : 'story-panel-tinted';
+                return (
+                    <div className={`story-panel ${toneClass} ${className} h-full shadow-2xl`} style={style}>
+                        <div className="story-panel-header">
+                            <h4 className="story-panel-title">{title}</h4>
+                        </div>
+                        <div className="story-copy">
+                            {blocks.length ? blocks.map((block, index) => <p key={index}>{block}</p>) : <p>Performance notes will appear here after the report is generated.</p>}
+                        </div>
+                    </div>
+                );
+            };
+
+            const PlanPanel = ({ value, variant = 'standard', tone = 'light', accent = '#9FE870', soft = '#f5ffed', darkGradient, title = "Next Month's Plans", className = 'flex-1' }) => {
+                const items = splitPlanItems(value);
+                const style = {
+                    ...getPlanTextStyle(value, variant),
+                    '--panel-accent': accent,
+                    '--panel-soft': soft,
+                    '--panel-dark': darkGradient || 'linear-gradient(135deg, #0d2600 0%, #163300 58%, #214f05 100%)',
+                    '--panel-border': `${accent}2E`
+                };
+                const toneClass = tone === 'dark' ? 'story-panel-dark' : 'story-panel-light';
+                return (
+                    <div className={`story-panel ${toneClass} ${className} h-full shadow-inner`} style={style}>
+                        <div className="story-panel-header">
+                            <h4 className="story-panel-title">{title}</h4>
+                        </div>
+                        <div className="plan-list">
+                            {items.length ? items.map((item, index) => <p className="plan-item" key={index}>{item}</p>) : <p className="plan-item">Next month plans will appear here after the report is generated.</p>}
+                        </div>
+                    </div>
+                );
+            };
+
             if (!setupComplete) {
                 return (
                     <div className="flex flex-col items-center justify-center min-h-screen bg-wise-forest p-8">
@@ -1871,12 +2221,13 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                             <div className="space-y-4">
                                 <input
                                     type="password"
+                                    autoComplete="off"
+                                    spellCheck="false"
                                     value={apiKey}
                                     onChange={e => setApiKey(e.target.value)}
                                     placeholder="API KEY"
-                                    autoComplete="off"
-                                    spellCheck="false"
-                                    className="w-full py-5 px-8 rounded-[2rem] bg-white/10 text-white placeholder-white/60 border border-white/10 outline-none font-black uppercase text-sm tracking-widest text-center focus:bg-white/15 focus:border-wise-fast/60"
+                                    aria-label="API KEY"
+                                    className="w-full bg-white/10 border border-white/10 rounded-full px-8 py-5 text-wise-fast/80 placeholder:text-wise-fast/55 outline-none font-black uppercase tracking-[0.12em] text-center focus:border-wise-fast/65 focus:bg-white/15 transition"
                                 />
                                 <ActionButton
                                     actionKey="report"
@@ -1884,7 +2235,6 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                     loadingLabel="Generating Report"
                                     doneLabel="Report Generated"
                                     onClick={handleGenerateMonthlyReport}
-                                    disabled={!apiKey.trim()}
                                     icon={<Icons.Zap size={18} />}
                                 />
                             </div>
@@ -1895,10 +2245,9 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
 
             return (
                 <div className="bg-slate-100 min-h-screen print:pb-0 pb-20">
-                    <nav className="no-print sticky top-0 z-50 bg-wise-forest px-8 py-4 flex justify-between items-center shadow-2xl border-b border-white/5">
+                    <nav className="no-print sticky top-0 z-50 bg-wise-forest px-8 py-4 flex justify-between items-center border-b border-white/5">
                         <div className="flex items-center gap-4">
-                            <Icons.Chart className="text-wise-fast" />
-                            <h2 className="text-white font-black uppercase tracking-tighter text-xl italic">{APP_TITLE}</h2>
+                            <h2 className="text-wise-fast font-black uppercase tracking-tight text-xl">{APP_TITLE}</h2>
                         </div>
                         <div className="flex items-center gap-3">
                             <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="bg-white/10 border border-white/20 text-white font-bold text-xs px-6 py-3 rounded-2xl outline-none">
@@ -1987,34 +2336,37 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                     </div>
                                     
                                     <div className="flex gap-1.5 flex-1 justify-end">
-                                        <MetricCard title="Spend" val={fmtCompactCurr(globalHeadline.stats.spend)} mom={globalHeadline.shifts.mom.spend} yoy={globalHeadline.shifts.yoy.spend} inverse={false} rawVal={globalHeadline.stats.spend} />
-                                        <MetricCard title="MNCs" val={fmtCompactNum(globalHeadline.stats.mncs)} mom={globalHeadline.shifts.mom.mncs} yoy={globalHeadline.shifts.yoy.mncs} inverse={false} rawVal={globalHeadline.stats.mncs} />
-                                        <MetricCard title="LTV" val={`£${globalHeadline.stats.ltv.toFixed(2)}`} mom={globalHeadline.shifts.mom.ltv} yoy={globalHeadline.shifts.yoy.ltv} inverse={false} rawVal={globalHeadline.stats.ltv} />
-                                        <MetricCard title="CPA" val={`£${globalHeadline.stats.cpa.toFixed(2)}`} mom={globalHeadline.shifts.mom.cpa} yoy={globalHeadline.shifts.yoy.cpa} inverse={true} rawVal={globalHeadline.stats.cpa} />
-                                        <MetricCard title="Payback" val={globalHeadline.stats.payback.toFixed(1) + 'm'} mom={globalHeadline.shifts.mom.payback} yoy={globalHeadline.shifts.yoy.payback} inverse={true} rawVal={globalHeadline.stats.payback} />
-                                        <MetricCard title="CM" val={fmtCompactCurr(globalHeadline.stats.cm)} mom={globalHeadline.shifts.mom.cm} yoy={globalHeadline.shifts.yoy.cm} inverse={false} rawVal={globalHeadline.stats.cm} />
+                                        <MetricCard title="Spend" val={fmtCompactCurr(globalHeadline.stats.spend)} mom={globalHeadline.shifts.mom.spend} yoy={globalHeadline.shifts.yoy.spend} inverse={false} rawVal={globalHeadline.stats.spend} mainColor="text-[#7AC94D]" />
+                                        <MetricCard title="MNCs" val={fmtCompactNum(globalHeadline.stats.mncs)} mom={globalHeadline.shifts.mom.mncs} yoy={globalHeadline.shifts.yoy.mncs} inverse={false} rawVal={globalHeadline.stats.mncs} mainColor="text-[#7AC94D]" />
+                                        <MetricCard title="LTV" val={`£${globalHeadline.stats.ltv.toFixed(2)}`} mom={globalHeadline.shifts.mom.ltv} yoy={globalHeadline.shifts.yoy.ltv} inverse={false} rawVal={globalHeadline.stats.ltv} mainColor="text-[#7AC94D]" />
+                                        <MetricCard title="CPA" val={`£${globalHeadline.stats.cpa.toFixed(2)}`} mom={globalHeadline.shifts.mom.cpa} yoy={globalHeadline.shifts.yoy.cpa} inverse={true} rawVal={globalHeadline.stats.cpa} mainColor="text-[#7AC94D]" />
+                                        <MetricCard title="Payback" val={globalHeadline.stats.payback.toFixed(1) + 'm'} mom={globalHeadline.shifts.mom.payback} yoy={globalHeadline.shifts.yoy.payback} inverse={true} rawVal={globalHeadline.stats.payback} mainColor="text-[#7AC94D]" />
+                                        <MetricCard title="CM" val={fmtCompactCurr(globalHeadline.stats.cm)} mom={globalHeadline.shifts.mom.cm} yoy={globalHeadline.shifts.yoy.cm} inverse={false} rawVal={globalHeadline.stats.cm} mainColor="text-[#7AC94D]" />
                                     </div>
                                 </div>
                                 
                                 <div className="grid grid-cols-12 gap-4 flex-1 overflow-hidden min-h-0">
                                     <div className="col-span-5 flex flex-col h-full">
-                                        <div className="flex-1 bg-slate-50 border-2 border-white rounded-[2rem] p-4 shadow-inner flex flex-col relative overflow-hidden min-h-0">
-                                            <h4 className="text-slate-400 text-[11px] font-black uppercase tracking-[0.3em] mb-2 flex items-center gap-2">
-                                                <Icons.Info size={16} /> Platform Split
+                                        <div
+                                            className="split-panel flex-1 rounded-[2rem] p-4 flex flex-col relative overflow-hidden min-h-0"
+                                            style={{ background: 'linear-gradient(135deg, #efffe6 0%, #f8fff3 52%, #ffffff 100%)', '--panel-border': '#9FE87033' }}
+                                        >
+                                            <h4 className="story-panel-title mb-2" style={{ color: '#9FE870' }}>
+                                                Platform Split
                                             </h4>
                                             <div className="flex-1 overflow-y-auto pr-2">
-                                                <table className="w-full text-[12px] font-bold border-collapse">
-                                                    <thead className="text-slate-400 uppercase tracking-widest border-b-2 border-slate-200">
+                                                <table className="w-full text-[12px] font-bold border-collapse text-wise-forest">
+                                                    <thead className="uppercase tracking-widest border-b border-white/80" style={{ color: '#4B7D2A' }}>
                                                         <tr>
                                                             <th className="py-1 px-1 text-left">Platform</th>
                                                             {reportData.global.platformStats.map((p, i) => (
-                                                                <th key={i} className="py-1 px-1 text-right">{getPlatformMeta(p.name)?.displayName || p.name}</th>
+                                                                <th key={i} className="py-1 px-1 text-right" style={{ color: ['#163300', '#4B7D2A', '#7AC94D', '#9FE870'][i % 4] }}>{getPlatformMeta(p.name)?.displayName || p.name}</th>
                                                             ))}
                                                         </tr>
                                                     </thead>
-                                                    <tbody className="divide-y-2 divide-slate-100">
+                                                    <tbody className="divide-y divide-white/70">
                                                         <tr className="hover:bg-white transition-colors">
-                                                            <td className="py-1.5 px-1.5 uppercase text-slate-700 font-black">Spend</td>
+                                                            <td className="py-1.5 px-1.5 uppercase text-wise-forest/80 font-black">Spend</td>
                                                             {reportData.global.platformStats.map((p, i) => (
                                                                 <td key={i} className="py-1.5 px-1.5 text-right">
                                                                     <div className="flex flex-col items-end gap-0.5">
@@ -2025,7 +2377,7 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                                             ))}
                                                         </tr>
                                                         <tr className="hover:bg-white transition-colors">
-                                                            <td className="py-1.5 px-1.5 uppercase text-slate-700 font-black">MNCs</td>
+                                                            <td className="py-1.5 px-1.5 uppercase text-wise-forest/80 font-black">MNCs</td>
                                                             {reportData.global.platformStats.map((p, i) => (
                                                                 <td key={i} className="py-1.5 px-1.5 text-right">
                                                                     <div className="flex flex-col items-end gap-0.5">
@@ -2036,7 +2388,7 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                                             ))}
                                                         </tr>
                                                         <tr className="hover:bg-white transition-colors">
-                                                            <td className="py-1.5 px-1.5 uppercase text-slate-700 font-black">LTV</td>
+                                                            <td className="py-1.5 px-1.5 uppercase text-wise-forest/80 font-black">LTV</td>
                                                             {reportData.global.platformStats.map((p, i) => (
                                                                 <td key={i} className="py-1.5 px-1.5 text-right">
                                                                     <div className="flex flex-col items-end gap-0.5">
@@ -2047,7 +2399,7 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                                             ))}
                                                         </tr>
                                                         <tr className="hover:bg-white transition-colors">
-                                                            <td className="py-1.5 px-1.5 uppercase text-slate-700 font-black">CPA</td>
+                                                            <td className="py-1.5 px-1.5 uppercase text-wise-forest/80 font-black">CPA</td>
                                                             {reportData.global.platformStats.map((p, i) => (
                                                                 <td key={i} className="py-1.5 px-1.5 text-right">
                                                                     <div className="flex flex-col items-end gap-0.5">
@@ -2058,7 +2410,7 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                                             ))}
                                                         </tr>
                                                         <tr className="hover:bg-white transition-colors">
-                                                            <td className="py-1.5 px-1.5 uppercase text-slate-700 font-black">PB</td>
+                                                            <td className="py-1.5 px-1.5 uppercase text-wise-forest/80 font-black">PB</td>
                                                             {reportData.global.platformStats.map((p, i) => (
                                                                 <td key={i} className="py-1.5 px-1.5 text-right">
                                                                     <div className="flex flex-col items-end gap-0.5">
@@ -2069,7 +2421,7 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                                             ))}
                                                         </tr>
                                                         <tr className="hover:bg-white transition-colors">
-                                                            <td className="py-1.5 px-1.5 uppercase text-slate-700 font-black">CM</td>
+                                                            <td className="py-1.5 px-1.5 uppercase text-wise-forest/80 font-black">CM</td>
                                                             {reportData.global.platformStats.map((p, i) => (
                                                                 <td key={i} className="py-1.5 px-1.5 text-right">
                                                                     <div className="flex flex-col items-end gap-0.5">
@@ -2082,37 +2434,24 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                                     </tbody>
                                                 </table>
                                             </div>
-                                            <div className="text-[10px] text-slate-400 font-semibold italic text-right px-2 mt-2">
+                                            <div className="report-note text-[10px] text-right px-2 mt-2">
                                                 * All percentage shifts indicate Month-over-Month (MoM) comparisons.
                                             </div>
                                         </div>
                                     </div>
                                     <div className="col-span-7 flex flex-col gap-4 h-full">
-                                        <div className="flex-1 bg-wise-forest rounded-[2rem] p-6 shadow-2xl flex flex-col relative overflow-hidden h-full">
-                                            <div className="absolute -top-16 -right-16 p-12 opacity-5"><Icons.Zap size={300} className="text-white" /></div>
-                                            <h4 className="text-wise-fast text-[12px] font-black uppercase tracking-[0.4em] mb-4 flex items-center gap-2">
-                                                <Icons.Zap size={18} /> Performance
-                                            </h4>
-                                            <textarea 
-                                                className="bg-transparent text-white w-full h-full resize-none outline-none font-medium text-[14px] leading-[1.6] placeholder:text-white/20 relative z-10" 
-                                                placeholder="Enter performance notes..."
-                                                value={activeNarratives['GLOBAL_perf'] !== undefined ? activeNarratives['GLOBAL_perf'] : defaultGlobalPerfText} 
-                                                onChange={e => updateNarrative('GLOBAL_perf', e.target.value)}
-                                            />
-                                        </div>
-                                        
-                                        <div className="flex-1 bg-slate-50 border-2 border-white rounded-[2rem] p-6 shadow-inner flex flex-col relative overflow-hidden h-full">
-                                            <h4 className="text-slate-400 text-[11px] font-black uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
-                                                <Icons.Calendar size={18} /> Next Month's Plans
-                                            </h4>
-                                            <textarea 
-                                                className="plan-textarea bg-transparent text-slate-700 w-full h-full resize-none outline-none font-medium placeholder:text-slate-400" 
-                                                style={getPlanTextStyle(activeNarratives['GLOBAL_plan'] || "")}
-                                                placeholder="Plans for next month..."
-                                                value={activeNarratives['GLOBAL_plan'] || ""}
-                                                onChange={e => updateNarrative('GLOBAL_plan', e.target.value)}
-                                            />
-                                        </div>
+                                        <PerformancePanel
+                                            value={activeNarratives['GLOBAL_perf'] !== undefined ? activeNarratives['GLOBAL_perf'] : defaultGlobalPerfText}
+                                            tone="dark"
+                                            accent="#9FE870"
+                                            className="flex-[0.88]"
+                                        />
+                                        <PlanPanel
+                                            value={activeNarratives['GLOBAL_plan'] || ""}
+                                            tone="dark"
+                                            accent="#9FE870"
+                                            className="flex-[1.12]"
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -2122,30 +2461,33 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                         {reportData && gacGlobalStats && (
                             <div className="slide-container">
                                 <div className="flex justify-between items-start mb-4 w-full gap-3">
-                                    <div className="bg-[#FFA500] text-white font-black uppercase rounded-r-full flex flex-col justify-center -ml-[0.5cm] pl-[0.5cm] pr-8 py-2" style={{ fontSize: '1.8rem', lineHeight: '1.1' }}>
-                                        <span className="tracking-tighter">GOOGLE APP CAMPAIGNS</span>
-                                        <span className="tracking-tighter">PERFORMANCE</span>
+                                    <div className="bg-[#FFA500] text-white font-black uppercase rounded-r-full flex flex-col justify-center -ml-[0.5cm] pl-[0.5cm] pr-8 py-2" style={{ fontSize: '1.65rem', lineHeight: '1.1' }}>
+                                            <span className="tracking-tighter">GOOGLE APP CAMPAIGNS</span>
+                                            <span className="tracking-tighter">PERFORMANCE</span>
                                     </div>
                                     
                                     <div className="flex gap-1.5 flex-1 justify-end">
-                                        <MetricCard title="Spend" val={fmtCompactCurr(gacGlobalStats.spend)} mom={gacGlobalStats.shifts?.mom?.spend} yoy={gacGlobalStats.shifts?.yoy?.spend} inverse={false} rawVal={gacGlobalStats.spend} mainColor="text-[#FFA500]" labelColor="text-[#FFA500]/70" />
-                                        <MetricCard title="MNCs" val={fmtCompactNum(gacGlobalStats.mncs)} mom={gacGlobalStats.shifts?.mom?.mncs} yoy={gacGlobalStats.shifts?.yoy?.mncs} inverse={false} rawVal={gacGlobalStats.mncs} mainColor="text-[#FFA500]" labelColor="text-[#FFA500]/70" />
-                                        <MetricCard title="LTV" val={`£${gacGlobalStats.ltv.toFixed(2)}`} mom={gacGlobalStats.shifts?.mom?.ltv} yoy={gacGlobalStats.shifts?.yoy?.ltv} inverse={false} rawVal={gacGlobalStats.ltv} mainColor="text-[#FFA500]" labelColor="text-[#FFA500]/70" />
-                                        <MetricCard title="CPA" val={`£${gacGlobalStats.cpa.toFixed(2)}`} mom={gacGlobalStats.shifts?.mom?.cpa} yoy={gacGlobalStats.shifts?.yoy?.cpa} inverse={true} rawVal={gacGlobalStats.cpa} mainColor="text-[#FFA500]" labelColor="text-[#FFA500]/70" />
-                                        <MetricCard title="Payback" val={gacGlobalStats.payback.toFixed(1) + 'm'} mom={gacGlobalStats.shifts?.mom?.payback} yoy={gacGlobalStats.shifts?.yoy?.payback} inverse={true} rawVal={gacGlobalStats.payback} mainColor="text-[#FFA500]" labelColor="text-[#FFA500]/70" />
-                                        <MetricCard title="CM" val={fmtCompactCurr(gacGlobalStats.cm)} mom={gacGlobalStats.shifts?.mom?.cm} yoy={gacGlobalStats.shifts?.yoy?.cm} inverse={false} rawVal={gacGlobalStats.cm} mainColor="text-[#FFA500]" labelColor="text-[#FFA500]/70" />
+                                        <MetricCard title="Spend" val={fmtCompactCurr(gacGlobalStats.spend)} mom={gacGlobalStats.shifts?.mom?.spend} yoy={gacGlobalStats.shifts?.yoy?.spend} inverse={false} rawVal={gacGlobalStats.spend} mainColor="text-[#FFA500]" labelColor="text-[#FFA500]/70" cardStyle={getPlatformMetricCardStyle('Google AC')} />
+                                        <MetricCard title="MNCs" val={fmtCompactNum(gacGlobalStats.mncs)} mom={gacGlobalStats.shifts?.mom?.mncs} yoy={gacGlobalStats.shifts?.yoy?.mncs} inverse={false} rawVal={gacGlobalStats.mncs} mainColor="text-[#FFA500]" labelColor="text-[#FFA500]/70" cardStyle={getPlatformMetricCardStyle('Google AC')} />
+                                        <MetricCard title="LTV" val={`£${gacGlobalStats.ltv.toFixed(2)}`} mom={gacGlobalStats.shifts?.mom?.ltv} yoy={gacGlobalStats.shifts?.yoy?.ltv} inverse={false} rawVal={gacGlobalStats.ltv} mainColor="text-[#FFA500]" labelColor="text-[#FFA500]/70" cardStyle={getPlatformMetricCardStyle('Google AC')} />
+                                        <MetricCard title="CPA" val={`£${gacGlobalStats.cpa.toFixed(2)}`} mom={gacGlobalStats.shifts?.mom?.cpa} yoy={gacGlobalStats.shifts?.yoy?.cpa} inverse={true} rawVal={gacGlobalStats.cpa} mainColor="text-[#FFA500]" labelColor="text-[#FFA500]/70" cardStyle={getPlatformMetricCardStyle('Google AC')} />
+                                        <MetricCard title="Payback" val={gacGlobalStats.payback.toFixed(1) + 'm'} mom={gacGlobalStats.shifts?.mom?.payback} yoy={gacGlobalStats.shifts?.yoy?.payback} inverse={true} rawVal={gacGlobalStats.payback} mainColor="text-[#FFA500]" labelColor="text-[#FFA500]/70" cardStyle={getPlatformMetricCardStyle('Google AC')} />
+                                        <MetricCard title="CM" val={fmtCompactCurr(gacGlobalStats.cm)} mom={gacGlobalStats.shifts?.mom?.cm} yoy={gacGlobalStats.shifts?.yoy?.cm} inverse={false} rawVal={gacGlobalStats.cm} mainColor="text-[#FFA500]" labelColor="text-[#FFA500]/70" cardStyle={getPlatformMetricCardStyle('Google AC')} />
                                     </div>
                                 </div>
                                 
                                 <div className="grid grid-cols-12 gap-4 flex-1 overflow-hidden min-h-0">
                                     <div className="col-span-5 flex flex-col h-full">
-                                        <div className="flex-1 bg-slate-50 border-2 border-[#FFA500]/20 rounded-[2rem] p-4 shadow-inner flex flex-col relative overflow-hidden min-h-0">
-                                            <h4 className="text-slate-400 text-[11px] font-black uppercase tracking-[0.3em] mb-2 flex items-center gap-2">
-                                                <Icons.Info size={16} /> Region Split
+                                        <div
+                                            className="split-panel flex-1 rounded-[2rem] p-4 flex flex-col relative overflow-hidden min-h-0"
+                                            style={{ background: getPlatformPanelTone('Google AC').regionGradient, borderColor: getPlatformPanelTone('Google AC').border }}
+                                        >
+                                            <h4 className="story-panel-title mb-2" style={{ color: getPlatformTheme('Google AC').accent }}>
+                                                Region Split
                                             </h4>
                                             <div className="flex-1 overflow-y-auto pr-2">
                                                 <table className="w-full text-[12px] font-bold border-collapse">
-                                                    <thead className="text-slate-400 uppercase tracking-widest border-b-2 border-slate-200 sticky top-0 bg-slate-50 z-10">
+                                                    <thead className="text-wise-forest/65 uppercase tracking-widest border-b border-white/80 sticky top-0 z-10">
                                                         <tr>
                                                             <th className="py-1 px-1 text-left">Region</th>
                                                             <th className="py-1 px-1 text-right">Spend</th>
@@ -2156,13 +2498,13 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                                             <th className="py-1 px-1 text-right">CM</th>
                                                         </tr>
                                                     </thead>
-                                                    <tbody className="divide-y-2 divide-slate-100">
+                                                    <tbody className="divide-y divide-white/70">
                                                         {reportData.regions.map((reg, i) => {
                                                             const p = reg.platformStats.find(platform => platform.name === 'Google AC');
                                                             if (!p || (p.mncs === 0 && p.spend === 0)) return null;
                                                             return (
                                                                 <tr key={i} className="hover:bg-white transition-colors">
-                                                                    <td className="py-1.5 px-1.5 uppercase text-slate-700 font-black">{reg.name}</td>
+                                                                    <td className="py-1.5 px-1.5 uppercase text-wise-forest/80 font-black">{reg.name}</td>
                                                                     <td className="py-1.5 px-1.5 text-right">
                                                                         <div className="flex flex-col items-end gap-0.5">
                                                                             <span className="font-black text-slate-900 text-[12px]">{fmtCompactCurr(p.spend)}</span>
@@ -2207,38 +2549,27 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                             </div>
                                             <div className="flex justify-between items-end px-2 mt-2">
                                                 <PlatformLogo platform="Google AC" size="medium" />
-                                                <div className="text-[10px] text-slate-400 font-semibold italic text-right">
+                                                <div className="report-note text-[10px] text-right" style={{ color: getPlatformTheme('Google AC').accent }}>
                                                     * All percentage shifts indicate Month-over-Month (MoM) comparisons.
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                     <div className="col-span-7 flex flex-col gap-4 h-full">
-                                        <div className="flex-1 bg-[#fff8eb] border-2 border-[#FFA500]/20 rounded-[2rem] p-6 shadow-2xl flex flex-col relative overflow-hidden h-full">
-                                            <div className="absolute -top-16 -right-16 p-12 opacity-5"><Icons.Zap size={300} className="text-[#FFA500]" /></div>
-                                            <h4 className="text-[#FFA500] text-[12px] font-black uppercase tracking-[0.4em] mb-4 flex items-center gap-2">
-                                                <Icons.Zap size={18} /> Performance
-                                            </h4>
-                                            <textarea 
-                                                className="bg-transparent text-slate-800 w-full h-full resize-none outline-none font-medium text-[14px] leading-[1.6] placeholder:text-slate-400 relative z-10" 
-                                                placeholder="Enter Google App Campaigns performance notes..."
-                                                value={activeNarratives['GAC_perf'] !== undefined ? activeNarratives['GAC_perf'] : defaultGACPerfText} 
-                                                onChange={e => updateNarrative('GAC_perf', e.target.value)}
-                                            />
-                                        </div>
-                                        
-                                        <div className="flex-1 bg-slate-50 border-2 border-white rounded-[2rem] p-6 shadow-inner flex flex-col relative overflow-hidden h-full">
-                                            <h4 className="text-slate-400 text-[11px] font-black uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
-                                                <Icons.Calendar size={18} /> Next Month's Plans
-                                            </h4>
-                                            <textarea 
-                                                className="plan-textarea bg-transparent text-slate-700 w-full h-full resize-none outline-none font-medium placeholder:text-slate-400" 
-                                                style={getPlanTextStyle(activeNarratives['GAC_plan'] || "")}
-                                                placeholder="Plans for next month..."
-                                                value={activeNarratives['GAC_plan'] || ""}
-                                                onChange={e => updateNarrative('GAC_plan', e.target.value)}
-                                            />
-                                        </div>
+                                        <PerformancePanel
+                                            value={activeNarratives['GAC_perf'] !== undefined ? activeNarratives['GAC_perf'] : defaultGACPerfText}
+                                            tone="dark"
+                                            accent="#FFA500"
+                                            darkGradient={getPlatformPanelTone('Google AC').darkGradient}
+                                            className="flex-[0.9]"
+                                        />
+                                        <PlanPanel
+                                            value={activeNarratives['GAC_plan'] || ""}
+                                            tone="dark"
+                                            accent="#FFA500"
+                                            darkGradient={getPlatformPanelTone('Google AC').darkGradient}
+                                            className="flex-[1.1]"
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -2248,30 +2579,33 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                         {reportData && molocoGlobalStats && (
                             <div className="slide-container">
                                 <div className="flex justify-between items-start mb-4 w-full gap-3">
-                                    <div className="bg-[#2C7CF5] text-white font-black uppercase rounded-r-full flex flex-col justify-center -ml-[0.5cm] pl-[0.5cm] pr-8 py-2" style={{ fontSize: '2rem', lineHeight: '1.1' }}>
-                                        <span className="tracking-tighter">MOLOCO</span>
-                                        <span className="tracking-tighter">PERFORMANCE</span>
+                                    <div className="bg-[#2C7CF5] text-white font-black uppercase rounded-r-full flex flex-col justify-center -ml-[0.5cm] pl-[0.5cm] pr-8 py-2" style={{ fontSize: '1.9rem', lineHeight: '1.1' }}>
+                                            <span className="tracking-tighter">MOLOCO</span>
+                                            <span className="tracking-tighter">PERFORMANCE</span>
                                     </div>
                                     
                                     <div className="flex gap-1.5 flex-1 justify-end">
-                                        <MetricCard title="Spend" val={fmtCompactCurr(molocoGlobalStats.spend)} mom={molocoGlobalStats.shifts?.mom?.spend} yoy={molocoGlobalStats.shifts?.yoy?.spend} inverse={false} rawVal={molocoGlobalStats.spend} mainColor="text-[#2C7CF5]" labelColor="text-[#2C7CF5]/70" />
-                                        <MetricCard title="MNCs" val={fmtCompactNum(molocoGlobalStats.mncs)} mom={molocoGlobalStats.shifts?.mom?.mncs} yoy={molocoGlobalStats.shifts?.yoy?.mncs} inverse={false} rawVal={molocoGlobalStats.mncs} mainColor="text-[#2C7CF5]" labelColor="text-[#2C7CF5]/70" />
-                                        <MetricCard title="LTV" val={`£${molocoGlobalStats.ltv.toFixed(2)}`} mom={molocoGlobalStats.shifts?.mom?.ltv} yoy={molocoGlobalStats.shifts?.yoy?.ltv} inverse={false} rawVal={molocoGlobalStats.ltv} mainColor="text-[#2C7CF5]" labelColor="text-[#2C7CF5]/70" />
-                                        <MetricCard title="CPA" val={`£${molocoGlobalStats.cpa.toFixed(2)}`} mom={molocoGlobalStats.shifts?.mom?.cpa} yoy={molocoGlobalStats.shifts?.yoy?.cpa} inverse={true} rawVal={molocoGlobalStats.cpa} mainColor="text-[#2C7CF5]" labelColor="text-[#2C7CF5]/70" />
-                                        <MetricCard title="Payback" val={molocoGlobalStats.payback.toFixed(1) + 'm'} mom={molocoGlobalStats.shifts?.mom?.payback} yoy={molocoGlobalStats.shifts?.yoy?.payback} inverse={true} rawVal={molocoGlobalStats.payback} mainColor="text-[#2C7CF5]" labelColor="text-[#2C7CF5]/70" />
-                                        <MetricCard title="CM" val={fmtCompactCurr(molocoGlobalStats.cm)} mom={molocoGlobalStats.shifts?.mom?.cm} yoy={molocoGlobalStats.shifts?.yoy?.cm} inverse={false} rawVal={molocoGlobalStats.cm} mainColor="text-[#2C7CF5]" labelColor="text-[#2C7CF5]/70" />
+                                        <MetricCard title="Spend" val={fmtCompactCurr(molocoGlobalStats.spend)} mom={molocoGlobalStats.shifts?.mom?.spend} yoy={molocoGlobalStats.shifts?.yoy?.spend} inverse={false} rawVal={molocoGlobalStats.spend} mainColor="text-[#2C7CF5]" labelColor="text-[#2C7CF5]/70" cardStyle={getPlatformMetricCardStyle('Moloco')} />
+                                        <MetricCard title="MNCs" val={fmtCompactNum(molocoGlobalStats.mncs)} mom={molocoGlobalStats.shifts?.mom?.mncs} yoy={molocoGlobalStats.shifts?.yoy?.mncs} inverse={false} rawVal={molocoGlobalStats.mncs} mainColor="text-[#2C7CF5]" labelColor="text-[#2C7CF5]/70" cardStyle={getPlatformMetricCardStyle('Moloco')} />
+                                        <MetricCard title="LTV" val={`£${molocoGlobalStats.ltv.toFixed(2)}`} mom={molocoGlobalStats.shifts?.mom?.ltv} yoy={molocoGlobalStats.shifts?.yoy?.ltv} inverse={false} rawVal={molocoGlobalStats.ltv} mainColor="text-[#2C7CF5]" labelColor="text-[#2C7CF5]/70" cardStyle={getPlatformMetricCardStyle('Moloco')} />
+                                        <MetricCard title="CPA" val={`£${molocoGlobalStats.cpa.toFixed(2)}`} mom={molocoGlobalStats.shifts?.mom?.cpa} yoy={molocoGlobalStats.shifts?.yoy?.cpa} inverse={true} rawVal={molocoGlobalStats.cpa} mainColor="text-[#2C7CF5]" labelColor="text-[#2C7CF5]/70" cardStyle={getPlatformMetricCardStyle('Moloco')} />
+                                        <MetricCard title="Payback" val={molocoGlobalStats.payback.toFixed(1) + 'm'} mom={molocoGlobalStats.shifts?.mom?.payback} yoy={molocoGlobalStats.shifts?.yoy?.payback} inverse={true} rawVal={molocoGlobalStats.payback} mainColor="text-[#2C7CF5]" labelColor="text-[#2C7CF5]/70" cardStyle={getPlatformMetricCardStyle('Moloco')} />
+                                        <MetricCard title="CM" val={fmtCompactCurr(molocoGlobalStats.cm)} mom={molocoGlobalStats.shifts?.mom?.cm} yoy={molocoGlobalStats.shifts?.yoy?.cm} inverse={false} rawVal={molocoGlobalStats.cm} mainColor="text-[#2C7CF5]" labelColor="text-[#2C7CF5]/70" cardStyle={getPlatformMetricCardStyle('Moloco')} />
                                     </div>
                                 </div>
                                 
                                 <div className="grid grid-cols-12 gap-4 flex-1 overflow-hidden min-h-0">
                                     <div className="col-span-5 flex flex-col h-full">
-                                        <div className="flex-1 bg-slate-50 border-2 border-[#2C7CF5]/20 rounded-[2rem] p-4 shadow-inner flex flex-col relative overflow-hidden min-h-0">
-                                            <h4 className="text-slate-400 text-[11px] font-black uppercase tracking-[0.3em] mb-2 flex items-center gap-2">
-                                                <Icons.Info size={16} /> Region Split
+                                        <div
+                                            className="split-panel flex-1 rounded-[2rem] p-4 flex flex-col relative overflow-hidden min-h-0"
+                                            style={{ background: getPlatformPanelTone('Moloco').regionGradient, borderColor: getPlatformPanelTone('Moloco').border }}
+                                        >
+                                            <h4 className="story-panel-title mb-2" style={{ color: getPlatformTheme('Moloco').accent }}>
+                                                Region Split
                                             </h4>
                                             <div className="flex-1 overflow-y-auto pr-2">
                                                 <table className="w-full text-[12px] font-bold border-collapse">
-                                                    <thead className="text-slate-400 uppercase tracking-widest border-b-2 border-slate-200 sticky top-0 bg-slate-50 z-10">
+                                                    <thead className="text-wise-forest/65 uppercase tracking-widest border-b border-white/80 sticky top-0 z-10">
                                                         <tr>
                                                             <th className="py-1 px-1 text-left">Region</th>
                                                             <th className="py-1 px-1 text-right">Spend</th>
@@ -2282,13 +2616,13 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                                             <th className="py-1 px-1 text-right">CM</th>
                                                         </tr>
                                                     </thead>
-                                                    <tbody className="divide-y-2 divide-slate-100">
+                                                    <tbody className="divide-y divide-white/70">
                                                         {reportData.regions.map((reg, i) => {
                                                             const p = reg.platformStats.find(platform => platform.name === 'Moloco');
                                                             if (!p || (p.mncs === 0 && p.spend === 0)) return null;
                                                             return (
                                                                 <tr key={i} className="hover:bg-white transition-colors">
-                                                                    <td className="py-1.5 px-1.5 uppercase text-slate-700 font-black">{reg.name}</td>
+                                                                    <td className="py-1.5 px-1.5 uppercase text-wise-forest/80 font-black">{reg.name}</td>
                                                                     <td className="py-1.5 px-1.5 text-right">
                                                                         <div className="flex flex-col items-end gap-0.5">
                                                                             <span className="font-black text-slate-900 text-[12px]">{fmtCompactCurr(p.spend)}</span>
@@ -2333,38 +2667,27 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                             </div>
                                             <div className="flex justify-between items-end px-2 mt-2">
                                                 <PlatformLogo platform="Moloco" size="medium" />
-                                                <div className="text-[10px] text-slate-400 font-semibold italic text-right">
+                                                <div className="report-note text-[10px] text-right" style={{ color: getPlatformTheme('Moloco').accent }}>
                                                     * All percentage shifts indicate Month-over-Month (MoM) comparisons.
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                     <div className="col-span-7 flex flex-col gap-4 h-full">
-                                        <div className="flex-1 bg-[#eef5ff] border-2 border-[#2C7CF5]/20 rounded-[2rem] p-6 shadow-2xl flex flex-col relative overflow-hidden h-full">
-                                            <div className="absolute -top-16 -right-16 p-12 opacity-5"><Icons.Zap size={300} className="text-[#2C7CF5]" /></div>
-                                            <h4 className="text-[#2C7CF5] text-[12px] font-black uppercase tracking-[0.4em] mb-4 flex items-center gap-2">
-                                                <Icons.Zap size={18} /> Performance
-                                            </h4>
-                                            <textarea 
-                                                className="bg-transparent text-slate-800 w-full h-full resize-none outline-none font-medium text-[14px] leading-[1.6] placeholder:text-slate-400 relative z-10" 
-                                                placeholder="Enter Moloco performance notes..."
-                                                value={activeNarratives['MOLOCO_perf'] !== undefined ? activeNarratives['MOLOCO_perf'] : defaultMolocoPerfText} 
-                                                onChange={e => updateNarrative('MOLOCO_perf', e.target.value)}
-                                            />
-                                        </div>
-                                        
-                                        <div className="flex-1 bg-slate-50 border-2 border-white rounded-[2rem] p-6 shadow-inner flex flex-col relative overflow-hidden h-full">
-                                            <h4 className="text-slate-400 text-[11px] font-black uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
-                                                <Icons.Calendar size={18} /> Next Month's Plans
-                                            </h4>
-                                            <textarea 
-                                                className="plan-textarea bg-transparent text-slate-700 w-full h-full resize-none outline-none font-medium placeholder:text-slate-400" 
-                                                style={getPlanTextStyle(activeNarratives['MOLOCO_plan'] || "")}
-                                                placeholder="Plans for next month..."
-                                                value={activeNarratives['MOLOCO_plan'] || ""}
-                                                onChange={e => updateNarrative('MOLOCO_plan', e.target.value)}
-                                            />
-                                        </div>
+                                        <PerformancePanel
+                                            value={activeNarratives['MOLOCO_perf'] !== undefined ? activeNarratives['MOLOCO_perf'] : defaultMolocoPerfText}
+                                            tone="dark"
+                                            accent="#2C7CF5"
+                                            darkGradient={getPlatformPanelTone('Moloco').darkGradient}
+                                            className="flex-[0.9]"
+                                        />
+                                        <PlanPanel
+                                            value={activeNarratives['MOLOCO_plan'] || ""}
+                                            tone="dark"
+                                            accent="#2C7CF5"
+                                            darkGradient={getPlatformPanelTone('Moloco').darkGradient}
+                                            className="flex-[1.1]"
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -2374,30 +2697,33 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                         {reportData && ttdGlobalStats && (
                             <div className="slide-container">
                                 <div className="flex justify-between items-start mb-4 w-full gap-3">
-                                    <div className="bg-[#1d9ad6] text-white font-black uppercase rounded-r-full flex flex-col justify-center -ml-[0.5cm] pl-[0.5cm] pr-8 py-2" style={{ fontSize: '2rem', lineHeight: '1.1' }}>
-                                        <span className="tracking-tighter">THE TRADE DESK</span>
-                                        <span className="tracking-tighter">PERFORMANCE</span>
+                                    <div className="bg-[#1d9ad6] text-white font-black uppercase rounded-r-full flex flex-col justify-center -ml-[0.5cm] pl-[0.5cm] pr-8 py-2" style={{ fontSize: '1.9rem', lineHeight: '1.1' }}>
+                                            <span className="tracking-tighter">THE TRADE DESK</span>
+                                            <span className="tracking-tighter">PERFORMANCE</span>
                                     </div>
                                     
                                     <div className="flex gap-1.5 flex-1 justify-end">
-                                        <MetricCard title="Spend" val={fmtCompactCurr(ttdGlobalStats.spend)} mom={ttdGlobalStats.shifts?.mom?.spend} yoy={ttdGlobalStats.shifts?.yoy?.spend} inverse={false} rawVal={ttdGlobalStats.spend} mainColor="text-[#1d9ad6]" labelColor="text-[#1d9ad6]/70" />
-                                        <MetricCard title="MNCs" val={fmtCompactNum(ttdGlobalStats.mncs)} mom={ttdGlobalStats.shifts?.mom?.mncs} yoy={ttdGlobalStats.shifts?.yoy?.mncs} inverse={false} rawVal={ttdGlobalStats.mncs} mainColor="text-[#1d9ad6]" labelColor="text-[#1d9ad6]/70" />
-                                        <MetricCard title="LTV" val={`£${ttdGlobalStats.ltv.toFixed(2)}`} mom={ttdGlobalStats.shifts?.mom?.ltv} yoy={ttdGlobalStats.shifts?.yoy?.ltv} inverse={false} rawVal={ttdGlobalStats.ltv} mainColor="text-[#1d9ad6]" labelColor="text-[#1d9ad6]/70" />
-                                        <MetricCard title="CPA" val={`£${ttdGlobalStats.cpa.toFixed(2)}`} mom={ttdGlobalStats.shifts?.mom?.cpa} yoy={ttdGlobalStats.shifts?.yoy?.cpa} inverse={true} rawVal={ttdGlobalStats.cpa} mainColor="text-[#1d9ad6]" labelColor="text-[#1d9ad6]/70" />
-                                        <MetricCard title="Payback" val={ttdGlobalStats.payback.toFixed(1) + 'm'} mom={ttdGlobalStats.shifts?.mom?.payback} yoy={ttdGlobalStats.shifts?.yoy?.payback} inverse={true} rawVal={ttdGlobalStats.payback} mainColor="text-[#1d9ad6]" labelColor="text-[#1d9ad6]/70" />
-                                        <MetricCard title="CM" val={fmtCompactCurr(ttdGlobalStats.cm)} mom={ttdGlobalStats.shifts?.mom?.cm} yoy={ttdGlobalStats.shifts?.yoy?.cm} inverse={false} rawVal={ttdGlobalStats.cm} mainColor="text-[#1d9ad6]" labelColor="text-[#1d9ad6]/70" />
+                                        <MetricCard title="Spend" val={fmtCompactCurr(ttdGlobalStats.spend)} mom={ttdGlobalStats.shifts?.mom?.spend} yoy={ttdGlobalStats.shifts?.yoy?.spend} inverse={false} rawVal={ttdGlobalStats.spend} mainColor="text-[#1d9ad6]" labelColor="text-[#1d9ad6]/70" cardStyle={getPlatformMetricCardStyle('TTD')} />
+                                        <MetricCard title="MNCs" val={fmtCompactNum(ttdGlobalStats.mncs)} mom={ttdGlobalStats.shifts?.mom?.mncs} yoy={ttdGlobalStats.shifts?.yoy?.mncs} inverse={false} rawVal={ttdGlobalStats.mncs} mainColor="text-[#1d9ad6]" labelColor="text-[#1d9ad6]/70" cardStyle={getPlatformMetricCardStyle('TTD')} />
+                                        <MetricCard title="LTV" val={`£${ttdGlobalStats.ltv.toFixed(2)}`} mom={ttdGlobalStats.shifts?.mom?.ltv} yoy={ttdGlobalStats.shifts?.yoy?.ltv} inverse={false} rawVal={ttdGlobalStats.ltv} mainColor="text-[#1d9ad6]" labelColor="text-[#1d9ad6]/70" cardStyle={getPlatformMetricCardStyle('TTD')} />
+                                        <MetricCard title="CPA" val={`£${ttdGlobalStats.cpa.toFixed(2)}`} mom={ttdGlobalStats.shifts?.mom?.cpa} yoy={ttdGlobalStats.shifts?.yoy?.cpa} inverse={true} rawVal={ttdGlobalStats.cpa} mainColor="text-[#1d9ad6]" labelColor="text-[#1d9ad6]/70" cardStyle={getPlatformMetricCardStyle('TTD')} />
+                                        <MetricCard title="Payback" val={ttdGlobalStats.payback.toFixed(1) + 'm'} mom={ttdGlobalStats.shifts?.mom?.payback} yoy={ttdGlobalStats.shifts?.yoy?.payback} inverse={true} rawVal={ttdGlobalStats.payback} mainColor="text-[#1d9ad6]" labelColor="text-[#1d9ad6]/70" cardStyle={getPlatformMetricCardStyle('TTD')} />
+                                        <MetricCard title="CM" val={fmtCompactCurr(ttdGlobalStats.cm)} mom={ttdGlobalStats.shifts?.mom?.cm} yoy={ttdGlobalStats.shifts?.yoy?.cm} inverse={false} rawVal={ttdGlobalStats.cm} mainColor="text-[#1d9ad6]" labelColor="text-[#1d9ad6]/70" cardStyle={getPlatformMetricCardStyle('TTD')} />
                                     </div>
                                 </div>
                                 
                                 <div className="grid grid-cols-12 gap-4 flex-1 overflow-hidden min-h-0">
                                     <div className="col-span-5 flex flex-col h-full">
-                                        <div className="flex-1 bg-slate-50 border-2 border-[#1d9ad6]/20 rounded-[2rem] p-4 shadow-inner flex flex-col relative overflow-hidden min-h-0">
-                                            <h4 className="text-slate-400 text-[11px] font-black uppercase tracking-[0.3em] mb-2 flex items-center gap-2">
-                                                <Icons.Info size={16} /> Region Split
+                                        <div
+                                            className="split-panel flex-1 rounded-[2rem] p-4 flex flex-col relative overflow-hidden min-h-0"
+                                            style={{ background: getPlatformPanelTone('TTD').regionGradient, borderColor: getPlatformPanelTone('TTD').border }}
+                                        >
+                                            <h4 className="story-panel-title mb-2" style={{ color: getPlatformTheme('TTD').accent }}>
+                                                Region Split
                                             </h4>
                                             <div className="flex-1 overflow-y-auto pr-2">
                                                 <table className="w-full text-[12px] font-bold border-collapse">
-                                                    <thead className="text-slate-400 uppercase tracking-widest border-b-2 border-slate-200 sticky top-0 bg-slate-50 z-10">
+                                                    <thead className="text-wise-forest/65 uppercase tracking-widest border-b border-white/80 sticky top-0 z-10">
                                                         <tr>
                                                             <th className="py-1 px-1 text-left">Region</th>
                                                             <th className="py-1 px-1 text-right">Spend</th>
@@ -2408,13 +2734,13 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                                             <th className="py-1 px-1 text-right">CM</th>
                                                         </tr>
                                                     </thead>
-                                                    <tbody className="divide-y-2 divide-slate-100">
+                                                    <tbody className="divide-y divide-white/70">
                                                         {reportData.regions.map((reg, i) => {
                                                             const p = reg.platformStats.find(platform => platform.name === 'TTD');
                                                             if (!p || (p.mncs === 0 && p.spend === 0)) return null;
                                                             return (
                                                                 <tr key={i} className="hover:bg-white transition-colors">
-                                                                    <td className="py-1.5 px-1.5 uppercase text-slate-700 font-black">{reg.name}</td>
+                                                                    <td className="py-1.5 px-1.5 uppercase text-wise-forest/80 font-black">{reg.name}</td>
                                                                     <td className="py-1.5 px-1.5 text-right">
                                                                         <div className="flex flex-col items-end gap-0.5">
                                                                             <span className="font-black text-slate-900 text-[12px]">{fmtCompactCurr(p.spend)}</span>
@@ -2459,38 +2785,27 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                             </div>
                                             <div className="flex justify-between items-end px-2 mt-2">
                                                 <PlatformLogo platform="TTD" size="medium" />
-                                                <div className="text-[10px] text-slate-400 font-semibold italic text-right">
+                                                <div className="report-note text-[10px] text-right" style={{ color: getPlatformTheme('TTD').accent }}>
                                                     * All percentage shifts indicate Month-over-Month (MoM) comparisons.
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                     <div className="col-span-7 flex flex-col gap-4 h-full">
-                                        <div className="flex-1 bg-[#ecf7fd] border-2 border-[#1d9ad6]/20 rounded-[2rem] p-6 shadow-2xl flex flex-col relative overflow-hidden h-full">
-                                            <div className="absolute -top-16 -right-16 p-12 opacity-5"><Icons.Zap size={300} className="text-[#1d9ad6]" /></div>
-                                            <h4 className="text-[#1d9ad6] text-[12px] font-black uppercase tracking-[0.4em] mb-4 flex items-center gap-2">
-                                                <Icons.Zap size={18} /> Performance
-                                            </h4>
-                                            <textarea 
-                                                className="bg-transparent text-slate-800 w-full h-full resize-none outline-none font-medium text-[14px] leading-[1.6] placeholder:text-slate-400 relative z-10" 
-                                                placeholder="Enter The Trade Desk performance notes..."
-                                                value={activeNarratives['TTD_perf'] !== undefined ? activeNarratives['TTD_perf'] : defaultTTDPerfText} 
-                                                onChange={e => updateNarrative('TTD_perf', e.target.value)}
-                                            />
-                                        </div>
-                                        
-                                        <div className="flex-1 bg-slate-50 border-2 border-white rounded-[2rem] p-6 shadow-inner flex flex-col relative overflow-hidden h-full">
-                                            <h4 className="text-slate-400 text-[11px] font-black uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
-                                                <Icons.Calendar size={18} /> Next Month's Plans
-                                            </h4>
-                                            <textarea 
-                                                className="plan-textarea bg-transparent text-slate-700 w-full h-full resize-none outline-none font-medium placeholder:text-slate-400" 
-                                                style={getPlanTextStyle(activeNarratives['TTD_plan'] || "")}
-                                                placeholder="Plans for next month..."
-                                                value={activeNarratives['TTD_plan'] || ""}
-                                                onChange={e => updateNarrative('TTD_plan', e.target.value)}
-                                            />
-                                        </div>
+                                        <PerformancePanel
+                                            value={activeNarratives['TTD_perf'] !== undefined ? activeNarratives['TTD_perf'] : defaultTTDPerfText}
+                                            tone="dark"
+                                            accent="#1d9ad6"
+                                            darkGradient={getPlatformPanelTone('TTD').darkGradient}
+                                            className="flex-[0.9]"
+                                        />
+                                        <PlanPanel
+                                            value={activeNarratives['TTD_plan'] || ""}
+                                            tone="dark"
+                                            accent="#1d9ad6"
+                                            darkGradient={getPlatformPanelTone('TTD').darkGradient}
+                                            className="flex-[1.1]"
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -2539,13 +2854,39 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                         {/* Platform Cards Row */}
                                         <div className="grid grid-cols-3 gap-3 h-auto shrink-0">
                                             {reg.platformStats.filter(p => p.name !== 'Avow' && (p.mncs > 0 || p.spend > 0)).map(p => {
+                                                const platformMeta = getPlatformMeta(p.name);
+                                                const platformTheme = getPlatformTheme(p.name);
+                                                const platformTone = getPlatformPanelTone(p.name);
                                                 return (
-                                                <div key={p.name} className="bg-white border-2 border-slate-50 rounded-[1.5rem] p-3 shadow-lg flex flex-col relative overflow-hidden group">
-                                                    
+                                                <div
+                                                    key={p.name}
+                                                    className="border rounded-[1.35rem] p-3 flex flex-col relative overflow-hidden group"
+                                                    style={{
+                                                        borderColor: platformTone.border,
+                                                        background: platformTone.metricGradient || platformTone.regionGradient
+                                                    }}
+                                                >
                                                     {/* Header: Name & Payback */}
                                                     <div className="flex justify-between items-center mb-2">
-                                                        <span className="text-[12px] font-black uppercase text-slate-500 tracking-widest">{p.name}</span>
-                                                        <span className="text-[10px] font-black text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100 shrink-0">{p.payback.toFixed(1)}m</span>
+                                                        <div className="flex items-center gap-2 min-w-0">
+                                                            <PlatformLogo platform={p.name} size="small" className="max-w-[34px]" />
+                                                            <span
+                                                                className="text-[10px] font-black uppercase tracking-[0.14em] leading-tight truncate"
+                                                                style={{ color: platformTheme.muted }}
+                                                            >
+                                                                {platformMeta?.displayName || p.name}
+                                                            </span>
+                                                        </div>
+                                                        <span
+                                                            className="text-[10px] font-black px-3 py-1 rounded-full border shrink-0"
+                                                            style={{
+                                                                color: platformTheme.muted,
+                                                                backgroundColor: `${platformTheme.accent}1A`,
+                                                                borderColor: `${platformTheme.accent}2E`
+                                                            }}
+                                                        >
+                                                            {p.payback.toFixed(1)}m
+                                                        </span>
                                                     </div>
                                                     
                                                     {/* MNCs */}
@@ -2561,11 +2902,11 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                                     
                                                     {/* Trendline */}
                                                     <div className="w-full h-6 mb-1.5 opacity-50 group-hover:opacity-100 transition-opacity">
-                                                        <MiniTrend data={p.trend.map(t => t.mncs)} height={24} color="#818cf8" />
+                                                        <MiniTrend data={p.trend.map(t => t.mncs)} height={24} color={platformTheme.accent} />
                                                     </div>
                                                     
                                                     {/* Spend */}
-                                                    <div className="mb-1 bg-slate-50 px-1.5 py-1 rounded-xl border border-slate-100 flex flex-col justify-center">
+                                                    <div className="mb-1 bg-white/55 px-1.5 py-1 rounded-xl border flex flex-col justify-center" style={{ borderColor: `${platformTheme.accent}1F` }}>
                                                         <div className="flex justify-between items-start mb-0.5">
                                                             <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Spend</p>
                                                             {renderPlatformPct(p.shifts?.mom?.spend, 'spend', p.spend)}
@@ -2575,21 +2916,21 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                                     
                                                     {/* LTV, CPA, CM Row */}
                                                     <div className="flex flex-col gap-1 mt-auto">
-                                                        <div className="bg-slate-50 px-1.5 py-1 rounded-xl border border-slate-100 flex flex-col justify-center">
+                                                        <div className="bg-white/55 px-1.5 py-1 rounded-xl border flex flex-col justify-center" style={{ borderColor: `${platformTheme.accent}1F` }}>
                                                             <div className="flex justify-between items-start mb-0.5">
                                                                 <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">LTV</p>
                                                                 {renderPlatformPct(p.shifts?.mom?.ltv, 'ltv', p.ltv)}
                                                             </div>
                                                             <p className="text-[12px] font-black text-slate-900">£{p.ltv.toFixed(2)}</p>
                                                         </div>
-                                                        <div className="bg-slate-50 px-1.5 py-1 rounded-xl border border-slate-100 flex flex-col justify-center">
+                                                        <div className="bg-white/55 px-1.5 py-1 rounded-xl border flex flex-col justify-center" style={{ borderColor: `${platformTheme.accent}1F` }}>
                                                             <div className="flex justify-between items-start mb-0.5">
                                                                 <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">CPA</p>
                                                                 {renderPlatformPct(p.shifts?.mom?.cpa, 'cpa', p.cpa)}
                                                             </div>
                                                             <p className="text-[12px] font-black text-slate-900">£{p.cpa.toFixed(2)}</p>
                                                         </div>
-                                                        <div className="bg-slate-50 px-1.5 py-1 rounded-xl border border-slate-100 flex flex-col justify-center">
+                                                        <div className="bg-white/55 px-1.5 py-1 rounded-xl border flex flex-col justify-center" style={{ borderColor: `${platformTheme.accent}1F` }}>
                                                             <div className="flex justify-between items-start mb-0.5">
                                                                 <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">CM</p>
                                                                 {renderPlatformPct(p.shifts?.mom?.cm, 'cm', p.cm)}
@@ -2604,39 +2945,28 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                         </div>
 
                                         {/* Note regarding MoM comparisons */}
-                                        <div className="text-[10px] text-slate-400 font-semibold italic text-right px-2 -mt-2">
+                                        <div className="report-note text-[10px] text-right px-2 -mt-2">
                                             * All percentage shifts indicate Month-over-Month (MoM) comparisons.
                                         </div>
 
                                         {/* Next Month's Plans Section */}
-                                        <div className="flex-1 bg-slate-50 border-2 border-white rounded-[1.5rem] p-4 shadow-inner flex flex-col relative overflow-hidden min-h-[100px]">
-                                            <h4 className="text-slate-400 text-[11px] font-black uppercase tracking-[0.3em] mb-2 flex items-center gap-2">
-                                                <Icons.Calendar size={18} /> Next Month's Plans
-                                            </h4>
-                                            <textarea 
-                                                className="plan-textarea bg-transparent text-slate-700 w-full h-full resize-none outline-none font-medium placeholder:text-slate-400" 
-                                                style={getPlanTextStyle(activeNarratives[reg.name + '_plan'] || "", 'regional')}
-                                                placeholder="Plans for next month..."
-                                                value={activeNarratives[reg.name + '_plan'] || ""}
-                                                onChange={e => updateNarrative(reg.name + '_plan', e.target.value)}
-                                            />
-                                        </div>
+                                        <PlanPanel
+                                            value={activeNarratives[reg.name + '_plan'] || ""}
+                                            variant="regional"
+                                            accent="#9FE870"
+                                            soft="#f4ffea"
+                                        />
 
                                     </div>
                                     
                                     {/* Right Column: Performance Notes */}
                                     <div className="col-span-4 flex flex-col h-full">
-                                        <div className="flex-1 bg-wise-forest rounded-[1.5rem] p-5 shadow-2xl flex flex-col h-full">
-                                            <h4 className="text-wise-fast text-[12px] font-black uppercase tracking-[0.4em] mb-4 flex items-center gap-2">
-                                                <Icons.Zap size={18} /> Performance
-                                            </h4>
-                                            <textarea 
-                                                className="bg-transparent text-white w-full h-full resize-none outline-none font-medium text-[14px] leading-[1.7] placeholder:text-white/20" 
-                                                placeholder="Enter performance notes..."
-                                                value={activeNarratives[reg.name + '_perf'] !== undefined ? activeNarratives[reg.name + '_perf'] : getRegionalPerformanceBase(reg)}
-                                                onChange={e => updateNarrative(reg.name + '_perf', e.target.value)}
-                                            />
-                                        </div>
+                                        <PerformancePanel
+                                            value={activeNarratives[reg.name + '_perf'] !== undefined ? activeNarratives[reg.name + '_perf'] : getRegionalPerformanceBase(reg)}
+                                            variant="regional"
+                                            tone="dark"
+                                            accent="#9FE870"
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -2655,35 +2985,38 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                         </div>
 
                         {/* Slide : Team Updates & Upcoming Plans */}
-                        <div className="slide-container bg-slate-100 overflow-hidden relative flex flex-col justify-center items-center">
-                            <div className="flex gap-12 w-full h-full max-w-[1200px] py-8">
-                                {/* Card 1 */}
-                                <div className="bg-white rounded-[3rem] p-8 flex-1 shadow-xl flex flex-col items-center text-center border border-slate-200">
-                                    <div className="w-32 h-32 bg-slate-50 rounded-[2rem] border border-slate-200 mb-8 flex items-center justify-center text-[4rem] shadow-sm">
-                                        🎉
-                                    </div>
-                                    <h2 className="text-[2.5rem] font-black text-wise-forest tracking-tighter mb-8">Team Updates</h2>
-                                    <textarea 
-                                        className="w-full flex-1 resize-none outline-none text-slate-600 text-lg leading-[1.8] text-center font-medium placeholder:text-slate-300"
-                                        placeholder="Enter team updates..."
-                                        value={activeNarratives['team_updates'] !== undefined ? activeNarratives['team_updates'] : "Cristina has joined in the London Office as a Paid Display Manager!\n\nLi is off for a well-deserved Sabbatical."}
-                                        onChange={e => updateNarrative('team_updates', e.target.value)}
+                        <div className="slide-container bg-wise-forest overflow-hidden relative">
+                            <div className="grid grid-cols-[1fr_auto_1fr] gap-0 h-full w-full items-center px-2 py-8">
+                                <div className="flex justify-center items-center min-h-0 px-10 text-center">
+                                    <div className="w-full flex flex-col items-center justify-start">
+                                    <h2 className="text-wise-fast font-black uppercase tracking-tighter leading-none mb-14 text-center w-full" style={{ fontSize: '4.25rem' }}>
+                                        TEAM UPDATES
+                                    </h2>
+                                    <textarea
+                                        className="presentation-textarea w-full max-w-[88%] h-[16rem] resize-none outline-none bg-transparent text-wise-fast text-center uppercase tracking-[0.04em] font-black placeholder:text-wise-fast/30"
+                                        style={{ fontSize: '1.55rem', lineHeight: 1.9, '--presentation-font-size': '24px', '--presentation-line-height': 1.9 }}
+                                        placeholder="Add team updates..."
+                                        value={formatTeamSlideText(activeNarratives['team_updates'] !== undefined ? activeNarratives['team_updates'] : "Cristina joined the London office as Paid Display Manager\n\nLi is off on a well-deserved sabbatical")}
+                                        onChange={e => updateNarrative('team_updates', formatTeamSlideText(e.target.value))}
                                     />
+                                    </div>
                                 </div>
-                                
-                                {/* Card 2 */}
-                                <div className="bg-white rounded-[3rem] p-8 flex-1 shadow-xl flex flex-col items-center text-center border border-slate-200">
-                                    <div className="w-32 h-32 bg-slate-50 rounded-[2rem] border border-slate-200 mb-8 flex items-center justify-center text-[4rem] shadow-sm">
-                                        📅
-                                    </div>
-                                    <h2 className="text-[2.5rem] font-black text-wise-forest tracking-tighter mb-8">Upcoming Plans</h2>
-                                    <textarea 
-                                        className="plan-textarea w-full flex-1 resize-none outline-none text-slate-600 text-center font-medium placeholder:text-slate-300"
-                                        style={getPlanTextStyle(activeNarratives['upcoming_plans'] !== undefined ? activeNarratives['upcoming_plans'] : "Android Test on Moloco.\n\nLaunch of Amazon DSP activity.\n\nVisa World Cup Campaign.", 'large')}
-                                        placeholder="Enter upcoming plans..."
-                                        value={activeNarratives['upcoming_plans'] !== undefined ? activeNarratives['upcoming_plans'] : "Android Test on Moloco.\n\nLaunch of Amazon DSP activity.\n\nVisa World Cup Campaign."}
-                                        onChange={e => updateNarrative('upcoming_plans', e.target.value)}
+
+                                <div className="w-px bg-wise-fast/45 h-[88%]" />
+
+                                <div className="flex justify-center items-center min-h-0 px-10 text-center">
+                                    <div className="w-full flex flex-col items-center justify-start">
+                                    <h2 className="text-wise-fast font-black uppercase tracking-tighter leading-none mb-14 text-center w-full" style={{ fontSize: '4.25rem' }}>
+                                        UPCOMING PLANS
+                                    </h2>
+                                    <textarea
+                                        className="presentation-textarea w-full max-w-[88%] h-[16rem] resize-none outline-none bg-transparent text-wise-fast text-center uppercase tracking-[0.04em] font-black placeholder:text-wise-fast/30"
+                                        style={{ fontSize: '1.35rem', lineHeight: 2.05, '--presentation-font-size': '21px', '--presentation-line-height': 2.05 }}
+                                        placeholder="Add priorities, launches, tests, or follow-ups..."
+                                        value={formatTeamSlideText(activeNarratives['upcoming_plans'] !== undefined ? activeNarratives['upcoming_plans'] : "Moloco Android test\n\nAmazon DSP launch\n\nVisa World Cup campaign")}
+                                        onChange={e => updateNarrative('upcoming_plans', formatTeamSlideText(e.target.value))}
                                     />
+                                    </div>
                                 </div>
                             </div>
                         </div>

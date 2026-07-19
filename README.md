@@ -52,12 +52,11 @@ https://kairelaidna.github.io/paid-display-monthly-performance/
 5. Click **Generate Report**.
 6. Watch the button progress from 1% to 100% while the tool loads both Google Sheets and generates all available monthly reports.
 7. Review the slides.
-8. Use **Export Deck** for the presentation PDF.
-9. Use **Copy Summary** to copy the Slack-ready summary for the currently selected month.
+8. Use **Export Deck**.
 
 The tool pulls the latest Lightdash rows every time **Generate Report** is clicked.
 
-The tool then loads all available Performance Updates tabs from the Apps Script bridge and matches them to every month available in the Lightdash data. If Lightdash includes `2026-06`, it matches tabs such as `June 2026`, `June`, `Jun 26`, and `2026-06`. When **Generate Report** is clicked, it prepares summaries for every matched month in the same session, so changing the month dropdown shows the historical report without another upload or generation step. Summary generation is parallelized so multiple months are prepared at the same time.
+The tool then loads all available Performance Updates tabs from the Apps Script bridge and matches them to every month available in the Lightdash data. If Lightdash includes `2026-06`, it matches tabs such as `June 2026`, `June`, `Jun 26`, and `2026-06`. When **Generate Report** is clicked, it prepares summaries for every matched month in the same session, so changing the month dropdown shows the historical report without another upload or generation step.
 
 ## Calculation Rules
 
