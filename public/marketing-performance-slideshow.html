@@ -359,6 +359,18 @@
             color: rgba(255, 255, 255, 0.92);
         }
 
+        .plan-empty-state {
+            display: block;
+            width: 3.8rem;
+            height: 1px;
+            margin: 0;
+            border-radius: 999px;
+            background: var(--panel-accent, #9FE870);
+            color: transparent;
+            font-size: 0;
+            line-height: 0;
+        }
+
         .split-panel {
             border: 1px solid var(--panel-border, rgba(22, 51, 0, 0.12));
             box-shadow: none !important;
@@ -1381,7 +1393,8 @@
                     [/\binAUS\b/g, 'in AUS'],
                     [/\ba in-platform\b/gi, 'an in-platform'],
                     [/\ba local\b/gi, 'a local'],
-                    [/\bFull-funnel\b/g, 'full-funnel']
+                    [/\bFull-funnel\b/g, 'full-funnel'],
+                    [/\bcertainy\b/gi, 'certainty']
                 ];
                 replacements.forEach(([pattern, replacement]) => {
                     text = text.replace(pattern, replacement);
@@ -2348,6 +2361,17 @@
                 const trimmedApiKey = apiKey.trim();
                 if (!trimmedApiKey) throw new Error('Paste the API KEY before generating the monthly report.');
                 if (!reportContext?.reportData) throw new Error('Could not build report context for this month.');
+                const allowedKeys = [
+                    'GLOBAL_perf',
+                    'GLOBAL_plan',
+                    'GAC_perf',
+                    'GAC_plan',
+                    'MOLOCO_perf',
+                    'MOLOCO_plan',
+                    'TTD_perf',
+                    'TTD_plan',
+                    ...REGIONS.map(region => `${region}_slack`)
+                ];
 
                 const controller = new AbortController();
                 const timeoutId = window.setTimeout(() => controller.abort(), OPENAI_SUMMARY_TIMEOUT_MS);
@@ -2379,18 +2403,25 @@
                                         'Plan fields must be high-quality strategic action lines separated by a blank row, matching regional Next Month Plans formatting. Do not use numbering, hyphen bullets, markdown bullets, or long paragraphs.',
                                         'Do not copy terse source lines like "Make budget adjustments on GAC and TTD"; synthesize them into complete executive actions that include the region/platform, the lever, and the business purpose.',
                                         'GLOBAL_plan must contain 5 synthesized actions, each roughly 18-34 words. Platform plans must contain 3 synthesized actions, each roughly 16-30 words. Each line should begin with an action verb or "In REGION,".',
+                                        'Regional Slack fields must be natural Slack-ready context for each region after the app adds "REGION: Concluded with X MNCs at Ym payback." Do not repeat the region name or the opening KPI recap.',
+                                        'Regional Slack fields should be 2-4 complete sentences in the team voice: specific, concise, and human. Explain what happened, why it mattered, and what the team did or learned. Use phrases like "We kept", "We scaled", "The test showed", and "This gives us" when they fit the source facts.',
+                                        'For regional Slack fields, avoid robotic fragments such as "Platform: action" or vague wording such as "bid and budget changes". If a bid, tCPA, budget, creative, or targeting change is mentioned, include the platform, market or test, and the performance reason.',
                                         'Before returning, clean grammar, tense, spelling, and capitalization while preserving the meaning.',
                                         'Preserve numeric values, platform names, region names, MoM/YoY language, GBP symbols, and payback month values exactly where used. Return only valid JSON.'
                                     ].join(' ')
                                 },
                                 {
                                     role: 'user',
-                                    content: `Create polished monthly report copy matching the prior Paid Display deck style. Return JSON with exactly these keys: GLOBAL_perf, GLOBAL_plan, GAC_perf, GAC_plan, MOLOCO_perf, MOLOCO_plan, TTD_perf, TTD_plan.
+                                    content: `Create polished monthly report copy matching the prior Paid Display deck style. Return JSON with exactly these keys: ${allowedKeys.join(', ')}.
 
 Follow this style pattern:
 Performance paragraph 1: direct KPI recap for the month, e.g. "{Platform} drove X MNCs (MoM) with spend of GBP Y, resulting in Zm payback (MoM)."
 Performance paragraph 2: concise strategic explanation of the story behind the numbers. Mention named regions and the operational levers from the source notes: scaling, tests, budget control, creative changes, targeting shifts, payback/LTV implications. The reader must understand the concrete context, not just that "bids" or "budgets" changed.
 Plans: use separate action lines like regional slides, with one blank row between each item. Make them strategic and specific. Do not number them and do not use hyphen bullets.
+Regional Slack fields: write the extra context that comes after the KPI recap in the Slack summary. Keep the tone close to these examples:
+"We scaled at the beginning of the month as tracked performance showed strong numbers. We are keeping spend stable now due to UF activity in Brazil."
+"We started running an in-platform conversion lift test on The Trade Desk to measure incrementality. We are not scaling during the test period so we get a clear read on performance."
+"We scaled back in over-payback markets to balance payback, while continuing to scale countries where app campaigns are optimizing efficiently toward Purchase."
 
 Quality bar for GLOBAL_plan:
 "Continue to scale and optimize Paid Display activities in ASIA, leveraging successful targeting strategies in Malaysia, the Philippines, and Singapore."
@@ -2420,9 +2451,16 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                     const data = await response.json();
                     const content = data.choices?.[0]?.message?.content || '{}';
                     const parsed = JSON.parse(content);
-                    const allowedKeys = ['GLOBAL_perf', 'GLOBAL_plan', 'GAC_perf', 'GAC_plan', 'MOLOCO_perf', 'MOLOCO_plan', 'TTD_perf', 'TTD_plan'];
                     return allowedKeys.reduce((acc, key) => {
-                        if (parsed[key]) acc[key] = key.endsWith('_plan') ? normalizePlanText(parsed[key]) : polishPerformanceOverviewText(parsed[key], reportContext);
+                        if (parsed[key]) {
+                            if (key.endsWith('_plan')) {
+                                acc[key] = normalizePlanText(parsed[key]);
+                            } else if (key.endsWith('_slack')) {
+                                acc[key] = fixCommonText(parsed[key]).replace(/\n+/g, ' ').trim();
+                            } else {
+                                acc[key] = polishPerformanceOverviewText(parsed[key], reportContext);
+                            }
+                        }
                         return acc;
                     }, {});
                 } finally {
@@ -2508,18 +2546,254 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
             const trimSummaryText = (value, maxLength = 260) => {
                 const text = String(value || '').replace(/\s+/g, ' ').trim();
                 if (text.length <= maxLength) return text;
-                const cut = text.slice(0, maxLength);
-                const lastSpace = cut.lastIndexOf(' ');
-                return `${cut.slice(0, lastSpace > 120 ? lastSpace : maxLength).replace(/[,\s]+$/, '')}.`;
+                const sentences = text
+                    .match(/[^.!?]+[.!?]+|[^.!?]+$/g)
+                    ?.map(sentence => finishSlackSentence(sentence))
+                    .filter(Boolean) || [];
+                const picked = [];
+                sentences.forEach(sentence => {
+                    if (!sentence || picked.length >= 3) return;
+                    const candidate = [...picked, sentence].join(' ');
+                    if (candidate.length <= maxLength || !picked.length) picked.push(sentence);
+                });
+                return picked.join(' ') || text;
             };
 
-            const getSummaryStory = (value, maxLength = 270) => {
+            const buildBoundedSentenceSummary = (sentences, maxLength = 430, maxSentences = 3) => {
+                const unique = [];
+                sentences.map(finishSlackSentence).filter(Boolean).forEach(sentence => {
+                    if (!unique.includes(sentence)) unique.push(sentence);
+                });
+                const picked = [];
+                unique.forEach(sentence => {
+                    if (picked.length >= maxSentences) return;
+                    const candidate = [...picked, sentence].join(' ');
+                    if (candidate.length <= maxLength || !picked.length) picked.push(sentence);
+                });
+                return picked.join(' ');
+            };
+
+            const getPlatformNameFromText = (value) => {
+                const meta = getPlatformMeta(value);
+                return meta ? meta.narrativeName : '';
+            };
+
+            const isGenericSlackSentence = (sentence) => {
+                const clean = String(sentence || '').trim();
+                return /\b(strategic scaling, budget allocation and creative optimi[sz]ation remained the key themes|operational bid and budget changes|made multiple bid and budget adjustments|bid changes|budget changes|better position|several optimisations|several optimizations)\b/i.test(clean);
+            };
+
+            const hasSlackActionContext = (sentence) => {
+                const clean = String(sentence || '').trim();
+                if (!clean) return false;
+                const hasNamedContext = containsAny(clean, [
+                    ...CONTEXT_TERMS,
+                    'UF',
+                    'CE2',
+                    'BAU',
+                    'Search',
+                    'Display',
+                    'Online Video',
+                    'CTV',
+                    'Purchase',
+                    'Android',
+                    'iOS',
+                    'pre-trip',
+                    'corridor',
+                    'conversion lift',
+                    'full funnel',
+                    'full-funnel',
+                    'programmatic'
+                ]);
+                const hasMetricContext = /£|\d+(?:\.\d+)?%|\b\d+(?:\.\d+)?m\b|\bMNCs?\b|\bpayback\b|\bCPA\b|\bLTV\b|\btCPA\b/i.test(clean);
+                return hasNamedContext || hasMetricContext;
+            };
+
+            const isSlackReadySentence = (sentence) => {
+                const clean = String(sentence || '').trim();
+                if (clean.length <= 22 || isGenericSlackSentence(clean)) return false;
+                if (isVagueOperationalNote(clean)) return false;
+                return hasSlackActionContext(clean);
+            };
+
+            const sentenceWithoutEnding = (value) => String(value || '').trim().replace(/[.!?]+$/, '').trim();
+
+            const finishSlackSentence = (value) => {
+                const clean = fixCommonText(value)
+                    .replace(/\s+/g, ' ')
+                    .replace(/\s+([,.!?])/g, '$1')
+                    .trim();
+                if (!clean) return '';
+                return /[.!?]$/.test(clean) ? clean : `${clean}.`;
+            };
+
+            const escapeRegExp = (value) => String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+            const stripRepeatedRegionContext = (sentence, region = null) => {
+                let clean = fixCommonText(sentence).replace(/\s+/g, ' ').trim();
+                const regionName = region?.name || '';
+                if (!regionName) return clean;
+                const regionPattern = escapeRegExp(regionName);
+                return clean
+                    .replace(new RegExp(`\\s+in\\s+${regionPattern}\\b`, 'gi'), '')
+                    .replace(new RegExp(`\\s+across\\s+${regionPattern}\\b`, 'gi'), '')
+                    .replace(new RegExp(`\\s+for\\s+${regionPattern}\\b`, 'gi'), '')
+                    .replace(/\s{2,}/g, ' ')
+                    .replace(/\s+([,.!?])/g, '$1')
+                    .trim();
+            };
+
+            const polishRegionalSlackSentence = (sentence, region = null) => {
+                let clean = stripRepeatedRegionContext(sentence, region);
+                const replacements = [
+                    [/\bOverall,\s+the performance\b/gi, 'Overall, performance'],
+                    [/\bwe have seen costs rising\b/gi, 'costs have risen'],
+                    [/\bwe are seeing costs rising\b/gi, 'costs are rising'],
+                    [/\bwe have been increasing the tCPA weekly\b/gi, 'we increased tCPA step-by-step'],
+                    [/\bwe have been adjusting the tCPA downward\b/gi, 'we adjusted tCPA down'],
+                    [/\binventory mix remains weighted toward Search inventory\b/gi, 'inventory mix remained Search-heavy'],
+                    [/\bthe split hasn't expanded\b/gi, 'the split did not expand'],
+                    [/,\s+and although the inventory mix remained Search-heavy,\s+the split did not expand\b/gi, ', but Search-heavy inventory kept the mix from expanding as much as expected'],
+                    [/\bto bring the channel closer to our 15-month payback goal; however, because the CVR also dropped, the payback period hasn't come down as fast as hoped\b/gi, 'to move closer to the 15-month payback goal, but lower CVR slowed payback improvement'],
+                    [/\bto bring the channel closer to\.$/gi, 'to move closer to the payback target, but lower CVR slowed payback improvement.'],
+                    [/\bWe run an in-platform\b/g, 'We ran an in-platform'],
+                    [/\bwe run an in-platform\b/gi, 'we ran an in-platform'],
+                    [/\bduring in-platform conversion lift test\b/gi, 'during the in-platform conversion lift test'],
+                    [/\bstart looking programmatic activities more from Full-funnel perspective\b/gi, 'evaluate programmatic activity through a full-funnel lens'],
+                    [/\bNeed to retest after changes have been implemented\b/g, 'We need to retest after the changes are implemented'],
+                    [/\bWebsite visit retargeting did not show any incremental value\b/gi, 'Website visit retargeting did not show incremental value, so the next read needs to focus on full-funnel in-app and video strategies'],
+                    [/\bStable 100k per month at this point\b/gi, 'Spend is staying at £100k per month for now'],
+                    [/\bStable spend levels due to ongoing UF flight\b/gi, 'Spend stayed stable because of the ongoing UF flight'],
+                    [/\bmaintained flat spend levels\b/gi, 'kept spend flat'],
+                    [/\bprotect the integrity of\b/gi, 'protect the read from'],
+                    [/\bsolidify our understanding of the channel's baseline value\b/gi, 'understand the channel baseline before scaling further'],
+                    [/\bmore certainty in incrementality\b/gi, 'more certainty on incrementality'],
+                    [/\bmore certainity\b/gi, 'more certainty']
+                ];
+                replacements.forEach(([pattern, replacement]) => {
+                    clean = clean.replace(pattern, replacement);
+                });
+                return finishSlackSentence(clean);
+            };
+
+            const foldPlatformIntoRegionalSlackSentence = (sentence, platformName, region = null) => {
+                const clean = polishRegionalSlackSentence(sentence, region);
+                if (!platformName || containsAny(clean, ['Google AC', 'Google App Campaigns', 'GAC', 'The Trade Desk', 'TTD', 'Moloco'])) return clean;
+                const base = sentenceWithoutEnding(clean);
+                if (!base) return clean;
+
+                if (/^stable spend during\s+/i.test(base)) {
+                    const detail = base.replace(/^stable spend during\s+/i, '');
+                    return polishRegionalSlackSentence(`We kept ${platformName} spend stable during ${detail} so we could get a cleaner read on performance.`, region);
+                }
+
+                if (/^stable spend until\s+/i.test(base)) {
+                    const detail = base.replace(/^stable spend until\s+/i, '');
+                    return polishRegionalSlackSentence(`We kept ${platformName} spend stable until ${detail}.`, region);
+                }
+
+                if (/^have not scaled\s+/i.test(base)) {
+                    const detail = base.replace(/^have not scaled\s*/i, '').trim();
+                    return polishRegionalSlackSentence(`We have not scaled ${platformName}${detail ? ` ${detail}` : ''}.`, region);
+                }
+
+                if (/^kept budget/i.test(base) || /^maintained/i.test(base)) {
+                    return polishRegionalSlackSentence(`${base} on ${platformName}.`, region);
+                }
+
+                if (/^we\s+/i.test(base)) {
+                    const sentenceWithPlatform = /(\bto\b|\bwhile\b|\bbecause\b|\bdue to\b)/i.test(base)
+                        ? base.replace(/(\bto\b|\bwhile\b|\bbecause\b|\bdue to\b)/i, `on ${platformName} $1`)
+                        : `${base} on ${platformName}`;
+                    return polishRegionalSlackSentence(`${sentenceWithPlatform.charAt(0).toLowerCase()}${sentenceWithPlatform.slice(1)}.`, region);
+                }
+
+                if (/^in\s+/i.test(base)) {
+                    return polishRegionalSlackSentence(`${base} on ${platformName}.`, region);
+                }
+
+                return polishRegionalSlackSentence(`${base} on ${platformName}.`, region);
+            };
+
+            const buildFallbackSlackStory = (region, maxLength = 270) => {
+                if (!region) return '';
+                const activePlatforms = (region.platformStats || [])
+                    .filter(platform => platform.name !== 'Avow' && (platform.mncs > 0 || platform.spend > 0))
+                    .sort((a, b) => b.mncs - a.mncs);
+                if (!activePlatforms.length) return '';
+                const top = activePlatforms[0];
+                const second = activePlatforms[1];
+                const topName = getPlatformMeta(top.name)?.narrativeName || top.name;
+                const secondName = second ? (getPlatformMeta(second.name)?.narrativeName || second.name) : '';
+                const movement = isFinite(region.shifts?.mom?.mncs)
+                    ? `Region MNCs ${region.shifts.mom.mncs >= 0 ? 'grew' : 'declined'} ${Math.abs(region.shifts.mom.mncs * 100).toFixed(1)}% MoM`
+                    : `${region.name} performance`;
+                const topLine = `${topName} was the largest platform contributor at ${formatSlackRegionMncs(top.mncs)} MNCs and a ${top.payback.toFixed(1)}m payback`;
+                const secondLine = second ? `, followed by ${secondName} with ${formatSlackRegionMncs(second.mncs)} MNCs at a ${second.payback.toFixed(1)}m payback` : '';
+                return trimSummaryText(`${movement}. ${topLine}${secondLine}.`, maxLength);
+            };
+
+            const getSummaryStory = (value, maxLength = 430, region = null) => {
                 const kpiPattern = /\b(concluded|drove [\d,.]+ MNCs|payback with an LTV|with a total spend|resulted in a payback|month payback with an LTV)\b/i;
                 const actionPattern = /\b(scale|scaled|scaling|test|incrementality|conversion lift|launched|maintained|stable|budget|creative|World Cup|CTV|Spotify|full-funnel|targeting|turned off|reactivate|record|calibration|payback|LTV|CPA)\b/i;
-                const sentences = splitSummarySentences(value).filter(sentence => sentence.length > 22 && !kpiPattern.test(sentence));
-                const priority = sentences.filter(sentence => actionPattern.test(sentence));
-                const picked = (priority.length ? priority : sentences).slice(0, 2).join(' ');
-                return trimSummaryText(picked, maxLength);
+                let currentPlatform = '';
+                const sentenceItems = fixCommonText(value)
+                    .split(/\n+/)
+                    .flatMap(block => {
+                        const cleanBlock = block.replace(/^-+\s*/, '').trim();
+                        if (!cleanBlock) return [];
+                        const platformName = getPlatformNameFromText(cleanBlock);
+                        if (/^(Google AC|Google App Campaigns|GAC|The Trade Desk|TTD|Moloco)\b/i.test(cleanBlock) && platformName) {
+                            currentPlatform = platformName;
+                        }
+                        return splitSummarySentences(cleanBlock).map(sentence => {
+                            const cleanSentence = sentence.trim();
+                            const needsPlatformContext = currentPlatform
+                                && !containsAny(cleanSentence, ['Google AC', 'Google App Campaigns', 'GAC', 'The Trade Desk', 'TTD', 'Moloco'])
+                                && actionPattern.test(cleanSentence);
+                            return needsPlatformContext
+                                ? foldPlatformIntoRegionalSlackSentence(cleanSentence, currentPlatform, region)
+                                : polishRegionalSlackSentence(cleanSentence, region);
+                        }).map(text => ({ text, platform: currentPlatform }));
+                    })
+                    .filter(({ text }) => !kpiPattern.test(text))
+                    .filter(({ text }) => isSlackReadySentence(text));
+                const priority = sentenceItems.filter(({ text }) => actionPattern.test(text));
+                const candidates = priority.length ? priority : sentenceItems;
+                const availablePlatforms = new Set(candidates.map(item => item.platform).filter(Boolean));
+                const picked = [];
+                const seenPlatforms = new Set();
+
+                candidates.forEach(item => {
+                    if (picked.length >= 3) return;
+                    if (picked.length < Math.min(2, availablePlatforms.size) && item.platform && seenPlatforms.has(item.platform)) return;
+                    if (picked.some(existing => existing.text === item.text)) return;
+                    picked.push(item);
+                    if (item.platform) seenPlatforms.add(item.platform);
+                });
+
+                candidates.forEach(item => {
+                    if (picked.length >= 3) return;
+                    if (picked.some(existing => existing.text === item.text)) return;
+                    picked.push(item);
+                });
+
+                return buildBoundedSentenceSummary(picked.map(item => item.text), maxLength, 3) || buildFallbackSlackStory(region, maxLength);
+            };
+
+            const getGeneratedSlackStory = (value, maxLength = 620, region = null) => {
+                const regionName = region?.name || '';
+                const regionPattern = regionName ? escapeRegExp(regionName) : '';
+                const sentences = splitSummarySentences(value)
+                    .map(sentence => {
+                        let clean = sentence.replace(/^\*{0,2}[^:*]+?\*{0,2}:\s*/, '').trim();
+                        if (regionPattern) clean = clean.replace(new RegExp(`^${regionPattern}:?\\s*`, 'i'), '').trim();
+                        if (/^concluded with\b/i.test(clean) || /^concluded in\b/i.test(clean)) return '';
+                        return polishRegionalSlackSentence(clean, region);
+                    })
+                    .filter(Boolean)
+                    .filter(sentence => !isGenericSlackSentence(sentence));
+                return buildBoundedSentenceSummary(sentences, maxLength, 4);
             };
 
             const getSummaryPlan = (value, maxLength = 255) => {
@@ -2543,7 +2817,8 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                 const summaryRegions = reportData.regions.filter(region => region.stats.mncs > 0 || activeNarratives[`${region.name}_perf`] || activeNarratives[`${region.name}_plan`]);
                 const highlightLines = summaryRegions.map(region => {
                     const paybackText = region.stats.payback > 0.05 ? ` at a ${region.stats.payback.toFixed(1)}m payback` : '';
-                    const story = getSummaryStory(activeNarratives[`${region.name}_perf`] || getRegionalPerformanceBase(region, {}, currentReportContext));
+                    const story = getGeneratedSlackStory(activeNarratives[`${region.name}_slack`] || '', 620, region)
+                        || getSummaryStory(activeNarratives[`${region.name}_perf`] || getRegionalPerformanceBase(region, {}, currentReportContext), 560, region);
                     return `${region.name}: Concluded with ${formatSlackRegionMncs(region.stats.mncs)} MNCs${paybackText}.${story ? ` ${story}` : ''}`;
                 });
                 const planLines = summaryRegions
@@ -2572,10 +2847,10 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                     '',
                     `:schedule-1: ${nextMonthLabel.split(' ')[0]} Plans:`,
                     '',
-                    ...(planLines.length ? planLines : ['Plans are still being finalized for this month.']),
+                    ...(planLines.length ? planLines : ['-']),
                     '',
                     '',
-                    'Feel free to leave a comment or reach out to @paiddisplay on #askdisplay if you have any questions!'
+                    ':slack: Feel free to leave a comment or reach out to @paiddisplay on #askdisplay if you have any questions!'
                 ].join('\n');
             };
 
@@ -2823,7 +3098,7 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                         </div>
                         <div className="plan-list">
                             <div className="plan-list-inner" ref={contentRef}>
-                                {items.length ? items.map((item, index) => <p className="plan-item" key={index}>{item}</p>) : <p className="plan-item">Next month plans will appear here after the report is generated.</p>}
+                                {items.length ? items.map((item, index) => <p className="plan-item" key={index}>{item}</p>) : <p className="plan-empty-state">&mdash;</p>}
                             </div>
                         </div>
                     </div>
@@ -3623,7 +3898,7 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                     </div>
                                 </div>
 
-                                <div className="w-px bg-wise-fast/45 h-[88%]" />
+                                <div className={`w-px bg-wise-fast/45 ${(activeNarratives['team_updates'] || activeNarratives['upcoming_plans']) ? 'h-[88%]' : 'h-[96%]'}`} />
 
                                 <div className="flex justify-center items-center min-h-0 px-10 text-center">
                                     <div className="w-full flex flex-col items-center justify-start">
