@@ -71,6 +71,16 @@
             overflow: hidden; 
         }
 
+        body.pdf-export-prep .slide-container {
+            margin: 0 auto !important;
+            width: 1280px !important;
+            height: 720px !important;
+            max-width: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            padding: 0.5cm !important;
+        }
+
         @media print {
             @page { size: 1280px 720px; margin: 0; }
             html, body { background: white !important; padding: 0 !important; margin: 0 !important; height: auto !important; }
@@ -119,6 +129,11 @@
             textarea[class*="text-lg"] {
                 font-size: 14px !important;
                 line-height: 1.6 !important;
+            }
+
+            .story-copy-inner,
+            .plan-list-inner {
+                transform: none !important;
             }
 
         }
@@ -1462,7 +1477,7 @@
             };
 
             const getNarrativeFitConfig = (variant = 'standard') => {
-                if (variant === 'regional') return { maxFont: 15, minFont: 4, floorFont: 1.2, maxLine: 1.5, minLine: 1.0 };
+                if (variant === 'regional') return { maxFont: 15, minFont: 4, floorFont: 0.85, maxLine: 1.5, minLine: 1.0 };
                 return { maxFont: 15, minFont: 6.2, floorFont: 3.4, maxLine: 1.62, minLine: 1.08 };
             };
 
@@ -1595,13 +1610,11 @@
                 applyPanelFitVars(panelEl, mode, variant, best, 1);
                 if (panelTextFits(viewportEl, contentEl)) return;
 
-                const viewportRect = viewportEl.getBoundingClientRect();
-                const contentRect = contentEl.getBoundingClientRect();
-                const scale = fitClamp(Math.min(
-                    viewportRect.width / Math.max(1, contentRect.width),
-                    viewportRect.height / Math.max(1, contentRect.height)
-                ) * 0.94, 0.05, 1);
-                applyPanelFitVars(panelEl, mode, variant, best, scale);
+                let emergencyFont = best;
+                for (let i = 0; i < 18 && !panelTextFits(viewportEl, contentEl); i += 1) {
+                    emergencyFont = Math.max(0.65, emergencyFont * 0.88);
+                    applyPanelFitVars(panelEl, mode, variant, emergencyFont, 1);
+                }
             };
 
             const fitAllRenderedPanelText = () => {
@@ -1725,7 +1738,6 @@
                         const floorFont = config.floorFont || config.minFont;
                         let best = floorFont;
                         let foundFit = false;
-                        let fitScale = 1;
                         if (fitsAt(config.maxFont)) {
                             best = config.maxFont;
                             foundFit = true;
@@ -1745,33 +1757,33 @@
 
                             if (!foundFit) {
                                 const finalMeasure = measureAt(best);
-                                const scaleDown = Math.min(
+                                const fontScaleDown = Math.min(
                                     finalMeasure.available.height / Math.max(1, finalMeasure.needed.height),
                                     finalMeasure.available.width / Math.max(1, finalMeasure.needed.width)
                                 );
-                                fitScale = fitClamp(scaleDown * 0.94, 0.05, 1);
+                                best = Math.max(0.65, best * fontScaleDown * 0.94);
                             }
                         }
 
                         let nextStyle = {
                             ...getVars(variant, best),
-                            '--text-fit-scale': fitScale.toFixed(3),
+                            '--text-fit-scale': '1',
                             __contentKey: contentKey
                         };
                         applyVars(nextStyle);
                         const actualContentRect = contentEl.getBoundingClientRect();
                         const actualViewportRect = viewportEl.getBoundingClientRect();
-                        const actualNeedsScale = fitScale >= 0.995;
-                        const actualNeededWidth = actualNeedsScale ? Math.max(contentEl.scrollWidth, actualContentRect.width) : actualContentRect.width;
-                        const actualNeededHeight = actualNeedsScale ? Math.max(contentEl.scrollHeight, actualContentRect.height) : actualContentRect.height;
+                        const actualNeededWidth = Math.max(contentEl.scrollWidth, actualContentRect.width);
+                        const actualNeededHeight = Math.max(contentEl.scrollHeight, actualContentRect.height);
                         const actualScaleDown = Math.min(
                             actualViewportRect.height / Math.max(1, actualNeededHeight),
                             actualViewportRect.width / Math.max(1, actualNeededWidth)
                         );
                         if (actualScaleDown < 0.995) {
+                            const adjustedFont = Math.max(0.65, best * actualScaleDown * 0.94);
                             nextStyle = {
-                                ...nextStyle,
-                                '--text-fit-scale': fitClamp(fitScale * actualScaleDown * 0.94, 0.05, 1).toFixed(3),
+                                ...getVars(variant, adjustedFont),
+                                '--text-fit-scale': '1',
                                 __contentKey: contentKey
                             };
                             applyVars(nextStyle);
@@ -1970,6 +1982,7 @@
                 const beforePrint = () => {
                     forceFit();
                     window.requestAnimationFrame(forceFit);
+                    [30, 90, 180, 320].forEach(delay => window.setTimeout(forceFit, delay));
                 };
                 window.addEventListener('beforeprint', beforePrint);
                 return () => {
@@ -2887,18 +2900,36 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                 }
             };
 
-            const handleExportDeck = () => {
+            const waitForFrame = () => new Promise(resolve => {
+                window.requestAnimationFrame(() => window.requestAnimationFrame(resolve));
+            });
+
+            const waitMs = (delay) => new Promise(resolve => window.setTimeout(resolve, delay));
+
+            const runPdfExportFit = async () => {
+                document.body.classList.add('pdf-export-prep');
+                await waitForFrame();
                 window.__fitPaidDisplayPanels?.();
                 fitAllRenderedPanelText();
-                window.setTimeout(() => {
-                    window.__fitPaidDisplayPanels?.();
-                    fitAllRenderedPanelText();
-                }, 90);
-                window.setTimeout(() => {
-                    window.__fitPaidDisplayPanels?.();
-                    fitAllRenderedPanelText();
+                await waitMs(80);
+                window.__fitPaidDisplayPanels?.();
+                fitAllRenderedPanelText();
+                await waitForFrame();
+                window.__fitPaidDisplayPanels?.();
+                fitAllRenderedPanelText();
+            };
+
+            const handleExportDeck = async () => {
+                const cleanup = () => document.body.classList.remove('pdf-export-prep');
+                window.addEventListener('afterprint', cleanup, { once: true });
+                try {
+                    await runPdfExportFit();
                     window.print();
-                }, 320);
+                    window.setTimeout(cleanup, 1800);
+                } catch (error) {
+                    cleanup();
+                    throw error;
+                }
             };
 
             const handleGenerateMonthlyReport = () => runActionWithProgress('report', async (setProgress) => {
