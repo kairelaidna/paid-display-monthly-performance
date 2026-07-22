@@ -51,6 +51,11 @@
             -webkit-print-color-adjust: exact; 
         }
 
+        .slide-container,
+        .slide-container * {
+            box-sizing: border-box;
+        }
+
         .slide-container {
             width: 100%;
             max-width: 1400px;
@@ -133,12 +138,14 @@
 
         .story-panel {
             border-radius: 1.35rem;
-            padding: 1.25rem 1.35rem;
+            padding: var(--panel-padding-y, 1.25rem) var(--panel-padding-x, 1.35rem);
             position: relative;
             overflow: hidden;
             display: flex;
             flex-direction: column;
             min-height: 0;
+            max-width: 100%;
+            box-sizing: border-box;
             border: 1px solid var(--panel-border, rgba(22, 51, 0, 0.12));
             box-shadow: none !important;
         }
@@ -164,13 +171,90 @@
             border: 1px solid var(--panel-border, rgba(15, 23, 42, 0.08));
         }
 
+        .story-panel-regional {
+            --narrative-font-size: 10.5px;
+            --narrative-line-height: 1.22;
+            --panel-padding-y: 0.55rem;
+            --panel-padding-x: 0.75rem;
+            --panel-header-gap: 0.28rem;
+            --story-paragraph-gap: 0.2em;
+            --story-first-scale: 1.01em;
+            --story-first-line-height: 1.1;
+        }
+
+        .regional-slide {
+            gap: 0;
+        }
+
+        .regional-header {
+            flex: 0 0 auto;
+            margin-bottom: 0.72rem;
+        }
+
+        .regional-body {
+            flex: 1 1 0;
+            height: 0;
+            min-height: 0;
+            overflow: hidden;
+            padding-bottom: 0.12cm;
+            box-sizing: border-box;
+            grid-template-rows: minmax(0, 1fr);
+            align-items: stretch;
+        }
+
+        .regional-left-column,
+        .regional-right-column {
+            height: 100%;
+            min-height: 0;
+            max-height: 100%;
+            overflow: hidden;
+        }
+
+        .regional-right-column .story-panel {
+            height: 100%;
+            max-height: 100%;
+            min-height: 0;
+        }
+
+        .story-panel-regional .story-copy,
+        .story-panel-regional .plan-list {
+            max-height: 100%;
+        }
+
+        .overview-body {
+            flex: 1 1 0;
+            height: 0;
+            min-height: 0;
+            overflow: hidden;
+            padding-bottom: 0.08cm;
+            box-sizing: border-box;
+            grid-template-rows: minmax(0, 1fr);
+            align-items: stretch;
+        }
+
+        .overview-left-column,
+        .overview-right-column {
+            height: 100%;
+            min-height: 0;
+            max-height: 100%;
+            overflow: hidden;
+        }
+
+        .overview-left-column .split-panel,
+        .overview-right-column .story-panel {
+            height: 100%;
+            max-height: 100%;
+            min-height: 0;
+        }
+
         .story-panel-header {
             display: flex;
             align-items: center;
             justify-content: flex-start;
-            margin-bottom: 0.95rem;
+            margin-bottom: var(--panel-header-gap, 0.95rem);
             position: relative;
             z-index: 2;
+            flex: 0 0 auto;
         }
 
         .story-panel-title {
@@ -193,16 +277,24 @@
             font-weight: 450;
             position: relative;
             z-index: 2;
+            flex: 1 1 auto;
+            min-height: 0;
             overflow: hidden;
         }
 
+        .story-copy-inner {
+            width: 100%;
+            transform: scale(var(--text-fit-scale, 1));
+            transform-origin: top left;
+        }
+
         .story-copy p {
-            margin: 0 0 0.78em;
+            margin: 0 0 var(--story-paragraph-gap, 0.78em);
         }
 
         .story-copy p:first-child {
-            font-size: 1.06em;
-            line-height: 1.45;
+            font-size: var(--story-first-scale, 1.06em);
+            line-height: var(--story-first-line-height, 1.45);
             font-weight: 800;
         }
 
@@ -222,20 +314,30 @@
         .plan-list {
             display: flex;
             flex-direction: column;
-            gap: clamp(0.85rem, calc(var(--plan-font-size, 14px) * 0.48), 1.35rem);
+            gap: var(--plan-item-gap, clamp(0.85rem, calc(var(--plan-font-size, 14px) * 0.48), 1.35rem));
             font-size: var(--plan-font-size, 13px);
             line-height: var(--plan-line-height, 1.54);
             position: relative;
             z-index: 2;
+            flex: 1 1 auto;
             min-height: 0;
             overflow: hidden;
+        }
+
+        .plan-list-inner {
+            display: flex;
+            flex-direction: column;
+            gap: inherit;
+            width: 100%;
+            transform: scale(var(--text-fit-scale, 1));
+            transform-origin: top left;
         }
 
         .plan-item {
             margin: 0;
             display: grid;
-            grid-template-columns: 0.92rem 1fr;
-            column-gap: 0.48rem;
+            grid-template-columns: var(--plan-bullet-track, 0.92rem) 1fr;
+            column-gap: var(--plan-bullet-gap, 0.48rem);
             align-items: start;
             color: rgba(22, 51, 0, 0.84);
             font-weight: 400;
@@ -268,7 +370,54 @@
             font-weight: 800;
         }
 
+        .pdf-title-break {
+            display: none;
+        }
+
+        .screen-title-space {
+            display: inline;
+        }
+
         @media print {
+            .regional-body {
+                flex-basis: 0 !important;
+                height: 0 !important;
+                min-height: 0 !important;
+                padding-bottom: 0.18cm !important;
+            }
+
+            .regional-left-column,
+            .regional-right-column,
+            .regional-right-column .story-panel {
+                height: 100% !important;
+                max-height: 100% !important;
+                min-height: 0 !important;
+            }
+
+            .overview-body {
+                flex-basis: 0 !important;
+                height: 0 !important;
+                min-height: 0 !important;
+                padding-bottom: 0.14cm !important;
+            }
+
+            .overview-left-column,
+            .overview-right-column,
+            .overview-left-column .split-panel,
+            .overview-right-column .story-panel {
+                height: 100% !important;
+                max-height: 100% !important;
+                min-height: 0 !important;
+            }
+
+            .pdf-title-break {
+                display: block !important;
+            }
+
+            .screen-title-space {
+                display: none !important;
+            }
+
             textarea.narrative-textarea {
                 font-size: var(--narrative-font-size, 12px) !important;
                 line-height: var(--narrative-line-height, 1.45) !important;
@@ -1285,86 +1434,383 @@
                 return lines.join('\n\n');
             };
 
-            const getPlanTextStyle = (value, variant = 'standard') => {
-                const text = String(value || '');
-                const nonEmptyLines = text.split('\n').map(line => line.trim()).filter(Boolean);
-                const approxCharsPerLine = variant === 'large' ? 34 : variant === 'regional' ? 62 : 68;
-                const visualLines = nonEmptyLines.reduce((sum, line) => sum + Math.max(1, Math.ceil(line.length / approxCharsPerLine)), 0);
-                const paragraphGaps = Math.max(0, text.split(/\n\s*\n/).filter(chunk => chunk.trim()).length - 1);
-                const fitScore = visualLines + paragraphGaps;
-                let fontSize = variant === 'large' ? 20 : variant === 'regional' ? 15 : 14;
-                let lineHeight = variant === 'large' ? 1.7 : variant === 'regional' ? 1.58 : 1.62;
+            const fitClamp = (value, min, max) => Math.max(min, Math.min(max, value));
+            const fitLerp = (start, end, amount) => start + (end - start) * amount;
+            const fitRatio = (fontSize, minFont, maxFont) => {
+                if (maxFont === minFont) return 0;
+                return fitClamp((maxFont - fontSize) / (maxFont - minFont), 0, 1);
+            };
+            const parsePx = (value) => Number.parseFloat(value) || 0;
 
-                if (variant === 'large') {
-                    if (fitScore > 12 || text.length > 520) {
-                        fontSize = 16;
-                        lineHeight = 1.55;
-                    }
-                } else if (fitScore > 24 || text.length > 1250) {
-                    fontSize = 11;
-                    lineHeight = 1.36;
-                } else if (fitScore > 19 || text.length > 980) {
-                    fontSize = 12;
-                    lineHeight = 1.42;
-                } else if (fitScore > 14 || text.length > 760) {
-                    fontSize = 13;
-                    lineHeight = 1.5;
-                } else if (fitScore > 10 || text.length > 560) {
-                    fontSize = variant === 'regional' ? 14 : 13;
-                    lineHeight = 1.54;
-                }
+            const getPlanFitConfig = (variant = 'standard') => {
+                if (variant === 'large') return { maxFont: 20, minFont: 7.5, floorFont: 3.8, maxLine: 1.7, minLine: 1.12, maxGap: 1.05, minGap: 0.14 };
+                if (variant === 'regional') return { maxFont: 15, minFont: 5.8, floorFont: 3.4, maxLine: 1.58, minLine: 1.08, maxGap: 0.95, minGap: 0.1 };
+                return { maxFont: 14, minFont: 6, floorFont: 3.6, maxLine: 1.62, minLine: 1.08, maxGap: 0.95, minGap: 0.1 };
+            };
 
+            const getNarrativeFitConfig = (variant = 'standard') => {
+                if (variant === 'regional') return { maxFont: 15, minFont: 4, floorFont: 1.2, maxLine: 1.5, minLine: 1.0 };
+                return { maxFont: 15, minFont: 6.2, floorFont: 3.4, maxLine: 1.62, minLine: 1.08 };
+            };
+
+            const getPlanTextStyle = (variant = 'standard', fontSize = getPlanFitConfig(variant).maxFont) => {
+                const config = getPlanFitConfig(variant);
+                const shrink = fitRatio(fontSize, config.minFont, config.maxFont);
                 return {
-                    '--plan-font-size': `${fontSize}px`,
-                    '--plan-line-height': lineHeight
+                    '--plan-font-size': `${fontSize.toFixed(2)}px`,
+                    '--plan-line-height': fitLerp(config.maxLine, config.minLine, shrink).toFixed(3),
+                    '--plan-item-gap': `${fitLerp(config.maxGap, config.minGap, shrink).toFixed(3)}rem`,
+                    '--panel-padding-y': `${fitLerp(1.25, 0.62, shrink).toFixed(3)}rem`,
+                    '--panel-padding-x': `${fitLerp(1.35, 0.82, shrink).toFixed(3)}rem`,
+                    '--panel-header-gap': `${fitLerp(0.95, 0.34, shrink).toFixed(3)}rem`,
+                    '--plan-bullet-track': `${fitLerp(0.92, 0.56, shrink).toFixed(3)}rem`,
+                    '--plan-bullet-gap': `${fitLerp(0.48, 0.24, shrink).toFixed(3)}rem`,
+                    '--text-fit-scale': '1'
                 };
             };
 
-            const getNarrativeTextStyle = (value, variant = 'standard') => {
-                const text = String(value || '');
-                const nonEmptyLines = text.split('\n').map(line => line.trim()).filter(Boolean);
-                const approxCharsPerLine = variant === 'regional' ? 46 : 70;
-                const visualLines = nonEmptyLines.reduce((sum, line) => sum + Math.max(1, Math.ceil(line.length / approxCharsPerLine)), 0);
-                const paragraphGaps = Math.max(0, text.split(/\n\s*\n/).filter(chunk => chunk.trim()).length - 1);
-                const fitScore = visualLines + paragraphGaps;
-                let fontSize = variant === 'regional' ? 16 : 15;
-                let lineHeight = variant === 'regional' ? 1.58 : 1.62;
+            const getNarrativeTextStyle = (variant = 'standard', fontSize = getNarrativeFitConfig(variant).maxFont) => {
+                const config = getNarrativeFitConfig(variant);
+                const shrink = fitRatio(fontSize, config.minFont, config.maxFont);
+                return {
+                    '--narrative-font-size': `${fontSize.toFixed(2)}px`,
+                    '--narrative-line-height': fitLerp(config.maxLine, config.minLine, shrink).toFixed(3),
+                    '--panel-padding-y': `${fitLerp(1.25, 0.48, shrink).toFixed(3)}rem`,
+                    '--panel-padding-x': `${fitLerp(1.35, 0.68, shrink).toFixed(3)}rem`,
+                    '--panel-header-gap': `${fitLerp(0.95, 0.24, shrink).toFixed(3)}rem`,
+                    '--story-paragraph-gap': `${fitLerp(0.78, 0.18, shrink).toFixed(3)}em`,
+                    '--story-first-scale': `${fitLerp(1.06, 1.01, shrink).toFixed(3)}em`,
+                    '--story-first-line-height': fitLerp(1.45, 1.08, shrink).toFixed(3),
+                    '--text-fit-scale': '1'
+                };
+            };
 
-                if (variant === 'regional') {
-                    if (fitScore > 42 || text.length > 1800) {
-                        fontSize = 11;
-                        lineHeight = 1.32;
-                    } else if (fitScore > 36 || text.length > 1550) {
-                        fontSize = 12;
-                        lineHeight = 1.38;
-                    } else if (fitScore > 31 || text.length > 1300) {
-                        fontSize = 13;
-                        lineHeight = 1.44;
-                    } else if (fitScore > 26 || text.length > 1050) {
-                        fontSize = 14;
-                        lineHeight = 1.5;
-                    } else if (fitScore > 21 || text.length > 840) {
-                        fontSize = 15;
-                        lineHeight = 1.54;
-                    }
-                } else if (fitScore > 34 || text.length > 1800) {
-                    fontSize = 11;
-                    lineHeight = 1.34;
-                } else if (fitScore > 28 || text.length > 1450) {
-                    fontSize = 12;
-                    lineHeight = 1.42;
-                } else if (fitScore > 22 || text.length > 1100) {
-                    fontSize = 13;
-                    lineHeight = 1.5;
-                } else if (fitScore > 17 || text.length > 820) {
-                    fontSize = 14;
-                    lineHeight = 1.56;
+            const estimateTextFitMaxFont = (mode, variant, text, config) => {
+                const source = String(text || '').replace(/empty-(performance|plan)/g, '').trim();
+                if (!source) return config.maxFont;
+
+                const chunks = source
+                    .split(/\n+/)
+                    .map(chunk => chunk.trim())
+                    .filter(Boolean);
+                if (!chunks.length) return config.maxFont;
+
+                const regional = variant === 'regional';
+                const isPlan = mode === 'plan';
+                const width = regional ? (isPlan ? 720 : 300) : (isPlan ? 760 : 680);
+                const height = regional ? (isPlan ? 235 : 505) : (isPlan ? 250 : 220);
+                const charWidth = isPlan ? 0.56 : 0.62;
+                const bulletReserve = isPlan ? 28 : 0;
+                const usableWidth = Math.max(120, width - bulletReserve);
+                const lineHeight = isPlan ? Math.min(config.maxLine, 1.42) : Math.min(config.maxLine, 1.26);
+                const paragraphGap = isPlan ? 0.75 : 0.62;
+                let best = config.floorFont || config.minFont;
+
+                for (let font = config.maxFont; font >= best; font -= 0.25) {
+                    const charsPerLine = Math.max(8, Math.floor(usableWidth / (font * charWidth)));
+                    const visualLines = chunks.reduce((total, chunk) => total + Math.max(1, Math.ceil(chunk.length / charsPerLine)), 0);
+                    const neededHeight = (visualLines * font * lineHeight) + (Math.max(0, chunks.length - 1) * font * paragraphGap);
+                    if (neededHeight <= height) return font;
                 }
 
+                return best;
+            };
+
+            const getPanelFitParts = (panelEl) => {
+                const planViewport = panelEl.querySelector('.plan-list');
+                const storyViewport = panelEl.querySelector('.story-copy');
+                const planContent = panelEl.querySelector('.plan-list-inner');
+                const storyContent = panelEl.querySelector('.story-copy-inner');
+                const mode = planViewport && planContent ? 'plan' : 'narrative';
                 return {
-                    '--narrative-font-size': `${fontSize}px`,
-                    '--narrative-line-height': lineHeight
+                    mode,
+                    variant: panelEl.classList.contains('story-panel-regional') ? 'regional' : 'standard',
+                    viewportEl: mode === 'plan' ? planViewport : storyViewport,
+                    contentEl: mode === 'plan' ? planContent : storyContent
                 };
+            };
+
+            const applyPanelFitVars = (panelEl, mode, variant, fontSize, scale = 1) => {
+                const vars = mode === 'plan'
+                    ? getPlanTextStyle(variant, fontSize)
+                    : getNarrativeTextStyle(variant, fontSize);
+                Object.entries({ ...vars, '--text-fit-scale': scale.toFixed(3) }).forEach(([key, value]) => {
+                    panelEl.style.setProperty(key, value);
+                });
+            };
+
+            const panelTextFits = (viewportEl, contentEl) => {
+                if (!viewportEl || !contentEl) return true;
+                const viewportRect = viewportEl.getBoundingClientRect();
+                const contentRect = contentEl.getBoundingClientRect();
+                const neededWidth = Math.max(contentEl.scrollWidth, contentRect.width);
+                const neededHeight = Math.max(contentEl.scrollHeight, contentRect.height);
+                return (
+                    neededWidth <= viewportRect.width + 1 &&
+                    neededHeight <= viewportRect.height + 1
+                );
+            };
+
+            const fitRenderedPanelText = (panelEl) => {
+                if (!panelEl?.isConnected) return;
+                const { mode, variant, viewportEl, contentEl } = getPanelFitParts(panelEl);
+                if (!viewportEl || !contentEl || viewportEl.clientWidth <= 1 || viewportEl.clientHeight <= 1) return;
+
+                const getConfig = mode === 'plan' ? getPlanFitConfig : getNarrativeFitConfig;
+                const baseConfig = getConfig(variant);
+                const sourceText = contentEl.innerText || '';
+                const maxFont = baseConfig.maxFont;
+                const floorFont = baseConfig.floorFont || baseConfig.minFont;
+
+                applyPanelFitVars(panelEl, mode, variant, maxFont, 1);
+                if (panelTextFits(viewportEl, contentEl)) return;
+
+                let best = floorFont;
+                let low = floorFont;
+                let high = maxFont;
+                for (let i = 0; i < 14; i += 1) {
+                    const mid = (low + high) / 2;
+                    applyPanelFitVars(panelEl, mode, variant, mid, 1);
+                    if (panelTextFits(viewportEl, contentEl)) {
+                        best = mid;
+                        low = mid;
+                    } else {
+                        high = mid;
+                    }
+                }
+
+                applyPanelFitVars(panelEl, mode, variant, best, 1);
+                if (panelTextFits(viewportEl, contentEl)) return;
+
+                const viewportRect = viewportEl.getBoundingClientRect();
+                const contentRect = contentEl.getBoundingClientRect();
+                const scale = fitClamp(Math.min(
+                    viewportRect.width / Math.max(1, contentRect.width),
+                    viewportRect.height / Math.max(1, contentRect.height)
+                ) * 0.94, 0.05, 1);
+                applyPanelFitVars(panelEl, mode, variant, best, scale);
+            };
+
+            const fitAllRenderedPanelText = () => {
+                document.querySelectorAll('.story-panel').forEach(fitRenderedPanelText);
+            };
+
+            const PANEL_FIT_STYLE_KEYS = [
+                '--plan-font-size',
+                '--plan-line-height',
+                '--plan-item-gap',
+                '--plan-bullet-track',
+                '--plan-bullet-gap',
+                '--narrative-font-size',
+                '--narrative-line-height',
+                '--story-paragraph-gap',
+                '--story-first-scale',
+                '--story-first-line-height',
+                '--panel-padding-y',
+                '--panel-padding-x',
+                '--panel-header-gap',
+                '--text-fit-scale'
+            ];
+
+            const readAppliedPanelFitStyle = (panelEl, contentKey) => {
+                const next = { __contentKey: contentKey };
+                PANEL_FIT_STYLE_KEYS.forEach(key => {
+                    const value = panelEl.style.getPropertyValue(key);
+                    if (value) next[key] = value;
+                });
+                return next;
+            };
+
+            const useAutoFitText = ({ mode, variant = 'standard', contentKey = '' }) => {
+                const contentRef = React.useRef(null);
+                const getVars = mode === 'plan' ? getPlanTextStyle : getNarrativeTextStyle;
+                const getConfig = mode === 'plan' ? getPlanFitConfig : getNarrativeFitConfig;
+                const initialConfig = getConfig(variant);
+                const initialMaxFont = estimateTextFitMaxFont(mode, variant, contentKey, initialConfig);
+                const estimatedStyle = React.useMemo(
+                    () => ({ ...getVars(variant, initialMaxFont), __contentKey: contentKey }),
+                    [mode, variant, contentKey, initialMaxFont]
+                );
+                const [fitStyle, setFitStyle] = React.useState(() => estimatedStyle);
+                const visibleFitStyle = fitStyle.__contentKey === contentKey ? fitStyle : estimatedStyle;
+                const { __contentKey, ...renderedFitStyle } = visibleFitStyle;
+
+                React.useLayoutEffect(() => {
+                    const contentEl = contentRef.current;
+                    const viewportEl = contentEl?.parentElement;
+                    const panelEl = contentEl?.closest('.story-panel');
+                    if (!contentEl || !viewportEl || !panelEl) return undefined;
+
+                    let frame = 0;
+                    let disposed = false;
+                    const baseConfig = getConfig(variant);
+                    const config = {
+                        ...baseConfig,
+                        maxFont: baseConfig.maxFont
+                    };
+                    const applyVars = (vars) => {
+                        Object.entries(vars).forEach(([key, value]) => {
+                            if (key.startsWith('__')) return;
+                            panelEl.style.setProperty(key, value);
+                        });
+                    };
+                    const getAvailableBox = () => {
+                        const panelStyle = window.getComputedStyle(panelEl);
+                        const headerEl = panelEl.querySelector('.story-panel-header');
+                        const headerStyle = headerEl ? window.getComputedStyle(headerEl) : null;
+                        const headerHeight = headerEl ? headerEl.getBoundingClientRect().height : 0;
+                        const headerGap = headerStyle ? parsePx(headerStyle.marginBottom) : 0;
+                        const paddingX = parsePx(panelStyle.paddingLeft) + parsePx(panelStyle.paddingRight);
+                        const paddingY = parsePx(panelStyle.paddingTop) + parsePx(panelStyle.paddingBottom);
+                        return {
+                            width: Math.max(1, panelEl.clientWidth - paddingX),
+                            height: Math.max(1, panelEl.clientHeight - paddingY - headerHeight - headerGap)
+                        };
+                    };
+                    const measureAt = (fontSize) => {
+                        const vars = getVars(variant, fontSize);
+                        applyVars(vars);
+                        const available = getAvailableBox();
+                        const measureEl = viewportEl.cloneNode(false);
+                        const measureInner = contentEl.cloneNode(true);
+                        measureEl.appendChild(measureInner);
+                        Object.assign(measureEl.style, {
+                            position: 'absolute',
+                            visibility: 'hidden',
+                            pointerEvents: 'none',
+                            left: '-10000px',
+                            top: '0',
+                            width: `${available.width}px`,
+                            height: 'auto',
+                            maxHeight: 'none',
+                            minHeight: '0',
+                            overflow: 'visible',
+                            flex: 'none',
+                            zIndex: '-1'
+                        });
+                        panelEl.appendChild(measureEl);
+                        const innerRect = measureInner.getBoundingClientRect();
+                        const measureRect = measureEl.getBoundingClientRect();
+                        const needed = {
+                            width: Math.max(measureInner.scrollWidth, innerRect.width, measureEl.scrollWidth, measureRect.width),
+                            height: Math.max(measureInner.scrollHeight, innerRect.height, measureEl.scrollHeight, measureRect.height)
+                        };
+                        measureEl.remove();
+                        return { available, needed, vars };
+                    };
+                    const fitsAt = (fontSize) => {
+                        const measurement = measureAt(fontSize);
+                        return (
+                            measurement.needed.height <= measurement.available.height + 0.5 &&
+                            measurement.needed.width <= measurement.available.width + 0.5
+                        );
+                    };
+                    const fit = () => {
+                        if (disposed || !contentEl.isConnected || !panelEl.isConnected) return;
+                        if (viewportEl.clientHeight <= 1 || viewportEl.clientWidth <= 1) return;
+
+                        const floorFont = config.floorFont || config.minFont;
+                        let best = floorFont;
+                        let foundFit = false;
+                        let fitScale = 1;
+                        if (fitsAt(config.maxFont)) {
+                            best = config.maxFont;
+                            foundFit = true;
+                        } else {
+                            let low = floorFont;
+                            let high = config.maxFont;
+                            for (let i = 0; i < 16; i += 1) {
+                                const mid = (low + high) / 2;
+                                if (fitsAt(mid)) {
+                                    best = mid;
+                                    foundFit = true;
+                                    low = mid;
+                                } else {
+                                    high = mid;
+                                }
+                            }
+
+                            if (!foundFit) {
+                                const finalMeasure = measureAt(best);
+                                const scaleDown = Math.min(
+                                    finalMeasure.available.height / Math.max(1, finalMeasure.needed.height),
+                                    finalMeasure.available.width / Math.max(1, finalMeasure.needed.width)
+                                );
+                                fitScale = fitClamp(scaleDown * 0.94, 0.05, 1);
+                            }
+                        }
+
+                        let nextStyle = {
+                            ...getVars(variant, best),
+                            '--text-fit-scale': fitScale.toFixed(3),
+                            __contentKey: contentKey
+                        };
+                        applyVars(nextStyle);
+                        const actualContentRect = contentEl.getBoundingClientRect();
+                        const actualViewportRect = viewportEl.getBoundingClientRect();
+                        const actualNeedsScale = fitScale >= 0.995;
+                        const actualNeededWidth = actualNeedsScale ? Math.max(contentEl.scrollWidth, actualContentRect.width) : actualContentRect.width;
+                        const actualNeededHeight = actualNeedsScale ? Math.max(contentEl.scrollHeight, actualContentRect.height) : actualContentRect.height;
+                        const actualScaleDown = Math.min(
+                            actualViewportRect.height / Math.max(1, actualNeededHeight),
+                            actualViewportRect.width / Math.max(1, actualNeededWidth)
+                        );
+                        if (actualScaleDown < 0.995) {
+                            nextStyle = {
+                                ...nextStyle,
+                                '--text-fit-scale': fitClamp(fitScale * actualScaleDown * 0.94, 0.05, 1).toFixed(3),
+                                __contentKey: contentKey
+                            };
+                            applyVars(nextStyle);
+                        }
+                        fitRenderedPanelText(panelEl);
+                        nextStyle = {
+                            ...nextStyle,
+                            ...readAppliedPanelFitStyle(panelEl, contentKey)
+                        };
+                        setFitStyle(previousStyle => {
+                            const unchanged = Object.keys(nextStyle).every(key => previousStyle[key] === nextStyle[key]);
+                            return unchanged ? previousStyle : nextStyle;
+                        });
+                    };
+                    const scheduleFit = () => {
+                        window.cancelAnimationFrame(frame);
+                        frame = window.requestAnimationFrame(() => {
+                            frame = window.requestAnimationFrame(fit);
+                        });
+                    };
+
+                    const fitters = window.__paidDisplayPanelFitters || new Set();
+                    window.__paidDisplayPanelFitters = fitters;
+                    fitters.add(fit);
+                    window.__fitPaidDisplayPanels = () => {
+                        window.__paidDisplayPanelFitters?.forEach(fitter => fitter());
+                        fitAllRenderedPanelText();
+                    };
+
+                    scheduleFit();
+                    if (document.fonts?.ready) document.fonts.ready.then(scheduleFit).catch(() => {});
+
+                    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(scheduleFit) : null;
+                    observer?.observe(panelEl);
+                    observer?.observe(viewportEl);
+                    const mutationObserver = typeof MutationObserver !== 'undefined' ? new MutationObserver(scheduleFit) : null;
+                    mutationObserver?.observe(contentEl, { childList: true, characterData: true, subtree: true });
+                    window.addEventListener('resize', scheduleFit);
+                    window.addEventListener('beforeprint', fit);
+
+                    return () => {
+                        disposed = true;
+                        window.cancelAnimationFrame(frame);
+                        fitters.delete(fit);
+                        observer?.disconnect();
+                        mutationObserver?.disconnect();
+                        window.removeEventListener('resize', scheduleFit);
+                        window.removeEventListener('beforeprint', fit);
+                    };
+                }, [mode, variant, contentKey]);
+
+                return { contentRef, fitStyle: renderedFitStyle };
             };
 
             const cleanupNarratives = (source = {}) => Object.entries(source).reduce((acc, [key, value]) => {
@@ -1492,7 +1938,32 @@
 
                 setNarratives({});
                 setNarrativeMonth('');
-            }, [selectedMonth, reportData, performanceRowsByMonth, narrativesByMonth]);
+                }, [selectedMonth, reportData, performanceRowsByMonth, narrativesByMonth]);
+
+            useEffect(() => {
+                if (!setupComplete) return undefined;
+                const forceFit = () => {
+                    window.__fitPaidDisplayPanels?.();
+                    fitAllRenderedPanelText();
+                };
+                const delays = [30, 90, 180, 360, 700, 1200, 1900];
+                const timers = delays.map(delay => window.setTimeout(forceFit, delay));
+                if (document.fonts?.ready) {
+                    document.fonts.ready.then(() => {
+                        forceFit();
+                        window.requestAnimationFrame(forceFit);
+                    }).catch(() => {});
+                }
+                const beforePrint = () => {
+                    forceFit();
+                    window.requestAnimationFrame(forceFit);
+                };
+                window.addEventListener('beforeprint', beforePrint);
+                return () => {
+                    timers.forEach(timer => window.clearTimeout(timer));
+                    window.removeEventListener('beforeprint', beforePrint);
+                };
+            }, [setupComplete, selectedMonth, narratives, narrativesByMonth, narrativeMonth]);
 
             const uploadLightdashDataStep = async () => {
                 const { rows, source } = await loadRowsFromGoogleOrCache(LIGHTDASH_SHEET_ID, null, null);
@@ -1603,6 +2074,90 @@
                 return terms.some(term => lower.includes(term.toLowerCase()));
             };
 
+            const CONTEXT_TERMS = [
+                ...REGIONS,
+                'Google AC',
+                'Google App Campaigns',
+                'GAC',
+                'Moloco',
+                'TTD',
+                'The Trade Desk',
+                'USA',
+                'Canada',
+                'Brazil',
+                'Malaysia',
+                'Philippines',
+                'Singapore',
+                'Japan',
+                'Australia',
+                'New Zealand',
+                'NZL',
+                'GBR',
+                'UK',
+                'Germany',
+                'CHE',
+                'DEU',
+                'HUN',
+                'World Cup',
+                'CTV',
+                'Spotify',
+                'conversion lift',
+                'incrementality',
+                'full-funnel',
+                'video',
+                'creative',
+                'tCPA',
+                'payback',
+                'LTV',
+                'CPA',
+                'MNC'
+            ];
+
+            const isVagueOperationalNote = (text) => {
+                const clean = String(text || '').trim();
+                if (!clean) return false;
+                const mentionsOperationalLever = /\b(bid|bids|budget|budgets|adjustment|adjustments|change|changes|optimisation|optimization|better position|improve performance)\b/i.test(clean);
+                if (!mentionsOperationalLever) return false;
+                const hasContext = containsAny(clean, CONTEXT_TERMS);
+                return !hasContext || /\bbetter position\b/i.test(clean);
+            };
+
+            const contextualizeOperationalNote = (text, reportContext = currentReportContext) => {
+                const clean = fixCommonText(text);
+                if (!isVagueOperationalNote(clean)) return clean;
+                const regions = [...(reportContext?.reportData?.regions || [])].filter(region => region.stats?.mncs > 0);
+                const growthRegions = [...regions]
+                    .sort((a, b) => (b.shifts?.mom?.mncs || 0) - (a.shifts?.mom?.mncs || 0))
+                    .slice(0, 2)
+                    .map(region => region.name)
+                    .join(' and ');
+                const softerRegions = [...regions]
+                    .sort((a, b) => (a.shifts?.mom?.mncs || 0) - (b.shifts?.mom?.mncs || 0))
+                    .slice(0, 2)
+                    .map(region => region.name)
+                    .join(' and ');
+                const platformNames = (reportContext?.reportData?.global?.platformStats || [])
+                    .filter(platform => platform.mncs > 0 || platform.spend > 0)
+                    .map(platform => getPlatformMeta(platform.name)?.narrativeName || platform.name)
+                    .slice(0, 3)
+                    .join(', ');
+                return `Operational bid and budget changes were focused across ${platformNames || 'the active Paid Display platforms'} to support growth in ${growthRegions || 'stronger regions'} while correcting softer trends in ${softerRegions || 'underperforming markets'} and protecting payback efficiency.`;
+            };
+
+            const polishPerformanceOverviewText = (text, reportContext = currentReportContext) => {
+                const paragraphs = splitNarrativeBlocks(text);
+                return paragraphs.map(paragraph => {
+                    const sentences = paragraph
+                        .split(/(?<=[.!?])\s+/)
+                        .map(sentence => sentence.trim())
+                        .filter(Boolean)
+                        .map(sentence => isVagueOperationalNote(sentence)
+                            ? contextualizeOperationalNote(sentence, reportContext)
+                            : fixCommonText(sentence));
+                    return [...new Set(sentences)].join(' ');
+                }).filter(Boolean).join('\n\n');
+            };
+
             const regionTextBundle = (regionName, sourceNarratives = narratives) => [
                 sourceNarratives[`${regionName}_perf`] || '',
                 sourceNarratives[`${regionName}_plan`] || ''
@@ -1710,7 +2265,9 @@
                 const targetKeys = targets.map(t => t.toLowerCase());
                 const notes = reportContext?.reportData?.regions?.flatMap(r => splitNotes(sourceNarratives[`${r.name}_perf`] || '')) || [];
                 const storyNotes = notes.filter(note => !/\b(concluded in|with a total spend|resulted in a payback|drove [\d,.]+ MNCs|at a [\d.]+-month payback)\b/i.test(note));
-                return storyNotes.find(note => targetKeys.some(key => note.toLowerCase().includes(key))) || storyNotes[0] || '';
+                const matched = storyNotes.find(note => targetKeys.some(key => note.toLowerCase().includes(key)));
+                const specific = storyNotes.find(note => containsAny(note, CONTEXT_TERMS) && !isVagueOperationalNote(note));
+                return contextualizeOperationalNote(matched || specific || storyNotes[0] || '', reportContext);
             };
 
             const joinStoryParagraph = (parts) => parts
@@ -1817,6 +2374,8 @@
                                         'For platform performance fields, use the supplied platform KPI recap as the first paragraph, then synthesize the strongest and weakest regional movements plus any relevant regional notes.',
                                         'Do not paste raw regional KPI recap lines into the second paragraph; turn them into a business narrative.',
                                         'The synthesis paragraph should sound like the prior deck: specific regions, platforms, tests, scaling/budget/creative levers, and implications for efficiency. Prefer the polished monthly review voice: "exhibited significant variance", "notable growth", "strategic scaling", "budget allocation", "creative strategies", "renewed opportunities", "prompted a move", "capitalized on budget adjustments". Avoid generic phrases unless followed by concrete examples.',
+                                        'Every overview must be precise enough for someone outside the channel to understand the context. Do not write vague phrases such as "bid changes", "budget adjustments", "optimisations", "several changes", or "better position" unless the same sentence explains which region/platform/campaign was affected, what changed, why it mattered, and the payback/LTV/MNC implication.',
+                                        'If source notes are brief, anchor the synthesis in the concrete facts from the payload: named regions, named countries, platform names, tests, campaign types, KPI direction, and efficiency implications. Prefer omitting an unclear source note over copying a vague sentence.',
                                         'Plan fields must be high-quality strategic action lines separated by a blank row, matching regional Next Month Plans formatting. Do not use numbering, hyphen bullets, markdown bullets, or long paragraphs.',
                                         'Do not copy terse source lines like "Make budget adjustments on GAC and TTD"; synthesize them into complete executive actions that include the region/platform, the lever, and the business purpose.',
                                         'GLOBAL_plan must contain 5 synthesized actions, each roughly 18-34 words. Platform plans must contain 3 synthesized actions, each roughly 16-30 words. Each line should begin with an action verb or "In REGION,".',
@@ -1830,7 +2389,7 @@
 
 Follow this style pattern:
 Performance paragraph 1: direct KPI recap for the month, e.g. "{Platform} drove X MNCs (MoM) with spend of GBP Y, resulting in Zm payback (MoM)."
-Performance paragraph 2: concise strategic explanation of the story behind the numbers. Mention named regions and the operational levers from the source notes: scaling, tests, budget control, creative changes, targeting shifts, payback/LTV implications.
+Performance paragraph 2: concise strategic explanation of the story behind the numbers. Mention named regions and the operational levers from the source notes: scaling, tests, budget control, creative changes, targeting shifts, payback/LTV implications. The reader must understand the concrete context, not just that "bids" or "budgets" changed.
 Plans: use separate action lines like regional slides, with one blank row between each item. Make them strategic and specific. Do not number them and do not use hyphen bullets.
 
 Quality bar for GLOBAL_plan:
@@ -1843,6 +2402,7 @@ Quality bar for GLOBAL_plan:
 Reference voice from the prior deck:
 Global summaries should read like a monthly business review: identify growth regions, declining regions, then explain the shared operating theme across markets.
 Platform summaries should call out the strongest region, the softer region, efficiency/payback implications, and the concrete action or test behind the movement.
+Avoid vague output. Bad: "Made multiple bid and budget adjustments so performance should be better." Good: "Budget and tCPA changes were concentrated in GAC Europe to scale markets with stronger payback while rotating new CE2 creatives to improve conversion quality."
 Next Month Plans should be complete executive action lines, not terse copied source notes.
 
 DATA:
@@ -1862,7 +2422,7 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                     const parsed = JSON.parse(content);
                     const allowedKeys = ['GLOBAL_perf', 'GLOBAL_plan', 'GAC_perf', 'GAC_plan', 'MOLOCO_perf', 'MOLOCO_plan', 'TTD_perf', 'TTD_plan'];
                     return allowedKeys.reduce((acc, key) => {
-                        if (parsed[key]) acc[key] = key.endsWith('_plan') ? normalizePlanText(parsed[key]) : fixCommonText(parsed[key]);
+                        if (parsed[key]) acc[key] = key.endsWith('_plan') ? normalizePlanText(parsed[key]) : polishPerformanceOverviewText(parsed[key], reportContext);
                         return acc;
                     }, {});
                 } finally {
@@ -2052,6 +2612,20 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                 }
             };
 
+            const handleExportDeck = () => {
+                window.__fitPaidDisplayPanels?.();
+                fitAllRenderedPanelText();
+                window.setTimeout(() => {
+                    window.__fitPaidDisplayPanels?.();
+                    fitAllRenderedPanelText();
+                }, 90);
+                window.setTimeout(() => {
+                    window.__fitPaidDisplayPanels?.();
+                    fitAllRenderedPanelText();
+                    window.print();
+                }, 320);
+            };
+
             const handleGenerateMonthlyReport = () => runActionWithProgress('report', async (setProgress) => {
                 setProgress(5, 'Uploading Lightdash data from Wise data bridge...');
                 const lightdashResult = await uploadLightdashDataStep();
@@ -2085,6 +2659,12 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
 
                 setProgress(96, 'Opening latest report...');
                 setSetupComplete(true);
+                [60, 220, 520, 1000].forEach(delay => {
+                    window.setTimeout(() => {
+                        window.__fitPaidDisplayPanels?.();
+                        fitAllRenderedPanelText();
+                    }, delay);
+                });
                 return `Generated ready-to-export reports for ${targetMonths.length} month${targetMonths.length === 1 ? '' : 's'}${usedAI ? ` with AI summaries for ${usedAI}` : ''}${usedLocal ? ` and local drafts for ${usedLocal}` : ''}.`;
             });
 
@@ -2166,23 +2746,59 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                 })
                 .join('\n');
 
+            const getTeamSlideTextStyle = (value, baseFontSize = 24) => {
+                const text = formatTeamSlideText(value || '');
+                const nonEmptyLines = text.split('\n').map(line => line.trim()).filter(Boolean);
+                const visualLines = nonEmptyLines.reduce((sum, line) => sum + Math.max(1, Math.ceil(line.length / 24)), 0);
+                const paragraphGaps = Math.max(0, text.split(/\n\s*\n/).filter(chunk => chunk.trim()).length - 1);
+                const fitScore = visualLines + paragraphGaps;
+                let fontSize = baseFontSize;
+                let lineHeight = baseFontSize >= 24 ? 1.9 : 2.05;
+
+                if (fitScore > 18 || text.length > 620) {
+                    fontSize = 11.5;
+                    lineHeight = 1.32;
+                } else if (fitScore > 15 || text.length > 500) {
+                    fontSize = 13;
+                    lineHeight = 1.42;
+                } else if (fitScore > 12 || text.length > 380) {
+                    fontSize = 15;
+                    lineHeight = 1.5;
+                } else if (fitScore > 9 || text.length > 260) {
+                    fontSize = 18;
+                    lineHeight = 1.65;
+                }
+
+                return {
+                    fontSize: `${fontSize}px`,
+                    lineHeight,
+                    '--presentation-font-size': `${fontSize}px`,
+                    '--presentation-line-height': lineHeight
+                };
+            };
+
             const PerformancePanel = ({ value, variant = 'standard', tone = 'dark', accent = '#9FE870', soft, darkGradient, title = 'Performance', className = 'flex-1' }) => {
                 const blocks = splitNarrativeBlocks(value);
+                const contentKey = blocks.length ? blocks.join('\n\n') : 'empty-performance';
+                const { contentRef, fitStyle } = useAutoFitText({ mode: 'narrative', variant, contentKey });
                 const style = {
-                    ...getNarrativeTextStyle(value, variant),
+                    ...fitStyle,
                     '--panel-accent': accent,
                     '--panel-soft': soft || '#f8fafc',
                     '--panel-dark': darkGradient || 'linear-gradient(135deg, #0d2600 0%, #163300 58%, #214f05 100%)',
                     '--panel-border': `${accent}33`
                 };
                 const toneClass = tone === 'dark' ? 'story-panel-dark' : 'story-panel-tinted';
+                const variantClass = variant === 'regional' ? 'story-panel-regional' : '';
                 return (
-                    <div className={`story-panel ${toneClass} ${className} h-full shadow-2xl`} style={style}>
+                    <div className={`story-panel ${toneClass} ${variantClass} ${className} shadow-2xl`} style={style}>
                         <div className="story-panel-header">
                             <h4 className="story-panel-title">{title}</h4>
                         </div>
                         <div className="story-copy">
-                            {blocks.length ? blocks.map((block, index) => <p key={index}>{block}</p>) : <p>Performance notes will appear here after the report is generated.</p>}
+                            <div className="story-copy-inner" ref={contentRef}>
+                                {blocks.length ? blocks.map((block, index) => <p key={index}>{block}</p>) : <p>Performance notes will appear here after the report is generated.</p>}
+                            </div>
                         </div>
                     </div>
                 );
@@ -2190,8 +2806,10 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
 
             const PlanPanel = ({ value, variant = 'standard', tone = 'light', accent = '#9FE870', soft = '#f5ffed', darkGradient, title = "Next Month's Plans", className = 'flex-1' }) => {
                 const items = splitPlanItems(value);
+                const contentKey = items.length ? items.join('\n\n') : 'empty-plan';
+                const { contentRef, fitStyle } = useAutoFitText({ mode: 'plan', variant, contentKey });
                 const style = {
-                    ...getPlanTextStyle(value, variant),
+                    ...fitStyle,
                     '--panel-accent': accent,
                     '--panel-soft': soft,
                     '--panel-dark': darkGradient || 'linear-gradient(135deg, #0d2600 0%, #163300 58%, #214f05 100%)',
@@ -2199,12 +2817,14 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                 };
                 const toneClass = tone === 'dark' ? 'story-panel-dark' : 'story-panel-light';
                 return (
-                    <div className={`story-panel ${toneClass} ${className} h-full shadow-inner`} style={style}>
+                    <div className={`story-panel ${toneClass} ${className} shadow-inner`} style={style}>
                         <div className="story-panel-header">
                             <h4 className="story-panel-title">{title}</h4>
                         </div>
                         <div className="plan-list">
-                            {items.length ? items.map((item, index) => <p className="plan-item" key={index}>{item}</p>) : <p className="plan-item">Next month plans will appear here after the report is generated.</p>}
+                            <div className="plan-list-inner" ref={contentRef}>
+                                {items.length ? items.map((item, index) => <p className="plan-item" key={index}>{item}</p>) : <p className="plan-item">Next month plans will appear here after the report is generated.</p>}
+                            </div>
                         </div>
                     </div>
                 );
@@ -2254,7 +2874,7 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                 {reportMonths.map(d => <option key={d} value={d} className="text-black">{d}</option>)}
                             </select>
                             <button onClick={handleCopySummary} className="bg-wise-fast text-wise-forest px-8 py-3 rounded-2xl font-black text-xs uppercase hover:bg-[#b9ff8a] shadow-2xl transition-transform active:scale-95">{summaryCopied ? 'Summary Copied' : 'Copy Summary'}</button>
-                            <button onClick={() => window.print()} className="bg-white text-wise-forest px-10 py-3 rounded-2xl font-black text-xs uppercase hover:bg-slate-50 shadow-2xl transition-transform active:scale-95">Export Deck</button>
+                            <button onClick={handleExportDeck} className="bg-white text-wise-forest px-10 py-3 rounded-2xl font-black text-xs uppercase hover:bg-slate-50 shadow-2xl transition-transform active:scale-95">Export Deck</button>
                         </div>
                     </nav>
 
@@ -2328,7 +2948,7 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
 
                         {/* Slide 4: Global Overview */}
                         {reportData && (
-                            <div className="slide-container">
+                            <div className="slide-container overview-slide">
                                 <div className="flex justify-between items-start mb-4 w-full gap-3">
                                     <div className="bg-wise-fast text-wise-forest font-black uppercase rounded-r-full flex flex-col justify-center -ml-[0.5cm] pl-[0.5cm] pr-8 py-2" style={{ fontSize: '2.2rem', lineHeight: '1.1' }}>
                                         <span className="tracking-tighter">PAID DISPLAY</span>
@@ -2345,8 +2965,8 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                     </div>
                                 </div>
                                 
-                                <div className="grid grid-cols-12 gap-4 flex-1 overflow-hidden min-h-0">
-                                    <div className="col-span-5 flex flex-col h-full">
+                                <div className="overview-body grid grid-cols-12 gap-4">
+                                    <div className="overview-left-column col-span-5 flex flex-col">
                                         <div
                                             className="split-panel flex-1 rounded-[2rem] p-4 flex flex-col relative overflow-hidden min-h-0"
                                             style={{ background: 'linear-gradient(135deg, #efffe6 0%, #f8fff3 52%, #ffffff 100%)', '--panel-border': '#9FE87033' }}
@@ -2439,7 +3059,7 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="col-span-7 flex flex-col gap-4 h-full">
+                                    <div className="overview-right-column col-span-7 flex flex-col gap-4">
                                         <PerformancePanel
                                             value={activeNarratives['GLOBAL_perf'] !== undefined ? activeNarratives['GLOBAL_perf'] : defaultGlobalPerfText}
                                             tone="dark"
@@ -2825,10 +3445,10 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
 
                         {/* Regional Loop */}
                         {reportData && reportData.regions.map((reg) => (
-                            <div className="slide-container" key={reg.name}>
+                            <div className="slide-container regional-slide" key={reg.name}>
                                 
                                 {/* Regional Header Section */}
-                                <div className="flex justify-between items-start mb-4 w-full gap-3">
+                                <div className="regional-header flex justify-between items-start w-full gap-3">
                                     <div className="bg-wise-fast text-wise-forest font-black uppercase rounded-r-full flex flex-col justify-center -ml-[0.5cm] pl-[0.5cm] pr-10 py-2" style={{ lineHeight: '1' }}>
                                         <span className="tracking-tighter" style={{ fontSize: '3rem' }}>{reg.name}</span>
                                         {getRegionSubtitle(reg.name) && (
@@ -2846,10 +3466,10 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                     </div>
                                 </div>
                                 
-                                <div className="grid grid-cols-12 gap-4 flex-1 overflow-hidden min-h-0">
+                                <div className="regional-body grid grid-cols-12 gap-4">
                                     
                                     {/* Left Column: Platform Cards & Next Month Plans */}
-                                    <div className="col-span-8 flex flex-col gap-4 min-h-0">
+                                    <div className="regional-left-column col-span-8 flex flex-col gap-4">
                                         
                                         {/* Platform Cards Row */}
                                         <div className="grid grid-cols-3 gap-3 h-auto shrink-0">
@@ -2960,12 +3580,13 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                     </div>
                                     
                                     {/* Right Column: Performance Notes */}
-                                    <div className="col-span-4 flex flex-col h-full">
+                                    <div className="regional-right-column col-span-4 flex flex-col">
                                         <PerformancePanel
                                             value={activeNarratives[reg.name + '_perf'] !== undefined ? activeNarratives[reg.name + '_perf'] : getRegionalPerformanceBase(reg)}
                                             variant="regional"
                                             tone="dark"
                                             accent="#9FE870"
+                                            className="flex-1 min-h-0"
                                         />
                                     </div>
                                 </div>
@@ -2990,13 +3611,13 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                 <div className="flex justify-center items-center min-h-0 px-10 text-center">
                                     <div className="w-full flex flex-col items-center justify-start">
                                     <h2 className="text-wise-fast font-black uppercase tracking-tighter leading-none mb-14 text-center w-full" style={{ fontSize: '4.25rem' }}>
-                                        TEAM UPDATES
+                                        TEAM<span className="screen-title-space"> </span><br className="pdf-title-break" />UPDATES
                                     </h2>
                                     <textarea
                                         className="presentation-textarea w-full max-w-[88%] h-[16rem] resize-none outline-none bg-transparent text-wise-fast text-center uppercase tracking-[0.04em] font-black placeholder:text-wise-fast/30"
-                                        style={{ fontSize: '1.55rem', lineHeight: 1.9, '--presentation-font-size': '24px', '--presentation-line-height': 1.9 }}
-                                        placeholder="Add team updates..."
-                                        value={formatTeamSlideText(activeNarratives['team_updates'] !== undefined ? activeNarratives['team_updates'] : "Cristina joined the London office as Paid Display Manager\n\nLi is off on a well-deserved sabbatical")}
+                                        style={getTeamSlideTextStyle(activeNarratives['team_updates'], 24)}
+                                        placeholder=""
+                                        value={formatTeamSlideText(activeNarratives['team_updates'] || '')}
                                         onChange={e => updateNarrative('team_updates', formatTeamSlideText(e.target.value))}
                                     />
                                     </div>
@@ -3007,13 +3628,13 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                 <div className="flex justify-center items-center min-h-0 px-10 text-center">
                                     <div className="w-full flex flex-col items-center justify-start">
                                     <h2 className="text-wise-fast font-black uppercase tracking-tighter leading-none mb-14 text-center w-full" style={{ fontSize: '4.25rem' }}>
-                                        UPCOMING PLANS
+                                        UPCOMING<span className="screen-title-space"> </span><br className="pdf-title-break" />PLANS
                                     </h2>
                                     <textarea
                                         className="presentation-textarea w-full max-w-[88%] h-[16rem] resize-none outline-none bg-transparent text-wise-fast text-center uppercase tracking-[0.04em] font-black placeholder:text-wise-fast/30"
-                                        style={{ fontSize: '1.35rem', lineHeight: 2.05, '--presentation-font-size': '21px', '--presentation-line-height': 2.05 }}
-                                        placeholder="Add priorities, launches, tests, or follow-ups..."
-                                        value={formatTeamSlideText(activeNarratives['upcoming_plans'] !== undefined ? activeNarratives['upcoming_plans'] : "Moloco Android test\n\nAmazon DSP launch\n\nVisa World Cup campaign")}
+                                        style={getTeamSlideTextStyle(activeNarratives['upcoming_plans'], 21)}
+                                        placeholder=""
+                                        value={formatTeamSlideText(activeNarratives['upcoming_plans'] || '')}
                                         onChange={e => updateNarrative('upcoming_plans', formatTeamSlideText(e.target.value))}
                                     />
                                     </div>
