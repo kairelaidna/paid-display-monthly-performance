@@ -700,7 +700,7 @@
             const monthsParam = monthValues.length ? `&months=${encodeURIComponent(monthValues.join(','))}` : '';
             const timeout = window.setTimeout(() => {
                 cleanup();
-                reject(new Error('The Wise data bridge did not respond. Check that you are signed into your Wise Google account and that the Apps Script deployment is active.'));
+                reject(new Error('The Wise data bridge did not respond. Check that you are signed into your Wise Google account and allow script.google.com and script.googleusercontent.com in Chrome if a blocker is enabled.'));
             }, 20000);
 
             const cleanup = () => {
@@ -721,7 +721,7 @@
 
             script.onerror = () => {
                 cleanup();
-                reject(new Error('The Wise data bridge could not be loaded. Open the Apps Script URL in this browser once and confirm you are signed into Wise Google.'));
+                reject(new Error('The Wise data bridge could not be loaded. Open the Apps Script URL in this browser once, then allow script.google.com and script.googleusercontent.com if Chrome shows ERR_BLOCKED_BY_CLIENT.'));
             };
 
             script.src = `${APPS_SCRIPT_DATA_BRIDGE_URL}?${sourceParam}&${callbackParam}${sheetParam}${allTabsParam}${monthsParam}`;
@@ -862,6 +862,126 @@
                 <svg width="100%" height={height} className="overflow-visible">
                     <polyline points={points} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
+            );
+        };
+
+        const getTeamSlideLineHeight = (fontSize, baseFontSize) => {
+            if (fontSize >= baseFontSize - 0.2) return baseFontSize >= 24 ? 1.9 : 2.05;
+            if (fontSize >= 20) return 1.75;
+            if (fontSize >= 16) return 1.58;
+            if (fontSize >= 13) return 1.45;
+            return 1.34;
+        };
+
+        const getTeamSlideAutoFitStyle = (fontSize, baseFontSize) => {
+            const lineHeight = getTeamSlideLineHeight(fontSize, baseFontSize);
+            return {
+                fontSize: `${fontSize}px`,
+                lineHeight,
+                overflow: 'hidden',
+                '--presentation-font-size': `${fontSize}px`,
+                '--presentation-line-height': lineHeight
+            };
+        };
+
+        const TeamSlideTextarea = ({ value, baseFontSize = 24, className, placeholder = '', onChange }) => {
+            const textareaRef = React.useRef(null);
+            const [fitStyle, setFitStyle] = React.useState(() => getTeamSlideAutoFitStyle(baseFontSize, baseFontSize));
+
+            const fitText = React.useCallback(() => {
+                const textarea = textareaRef.current;
+                if (!textarea || textarea.clientWidth <= 1 || textarea.clientHeight <= 1) return;
+
+                const minFontSize = 5;
+                const fits = () => (
+                    textarea.scrollHeight <= textarea.clientHeight + 1 &&
+                    textarea.scrollWidth <= textarea.clientWidth + 1
+                );
+                const applyFont = (fontSize) => {
+                    const next = getTeamSlideAutoFitStyle(fontSize, baseFontSize);
+                    textarea.style.fontSize = next.fontSize;
+                    textarea.style.lineHeight = String(next.lineHeight);
+                    textarea.style.overflow = 'hidden';
+                    textarea.style.setProperty('--presentation-font-size', next['--presentation-font-size']);
+                    textarea.style.setProperty('--presentation-line-height', String(next['--presentation-line-height']));
+                    return next;
+                };
+
+                let nextStyle = applyFont(baseFontSize);
+                if (!fits()) {
+                    let low = minFontSize;
+                    let high = baseFontSize;
+                    let best = minFontSize;
+                    for (let i = 0; i < 16; i += 1) {
+                        const mid = (low + high) / 2;
+                        nextStyle = applyFont(mid);
+                        if (fits()) {
+                            best = mid;
+                            low = mid;
+                        } else {
+                            high = mid;
+                        }
+                    }
+                    nextStyle = applyFont(best);
+                }
+
+                let emergencyFont = parseFloat(nextStyle.fontSize);
+                for (let i = 0; i < 12 && !fits(); i += 1) {
+                    emergencyFont = Math.max(minFontSize, emergencyFont * 0.9);
+                    nextStyle = applyFont(emergencyFont);
+                    if (emergencyFont <= minFontSize) break;
+                }
+
+                setFitStyle(previous => (
+                    previous.fontSize === nextStyle.fontSize && previous.lineHeight === nextStyle.lineHeight
+                        ? previous
+                        : nextStyle
+                ));
+            }, [baseFontSize, value]);
+
+            React.useLayoutEffect(() => {
+                let frame = 0;
+                let disposed = false;
+                const scheduleFit = () => {
+                    window.cancelAnimationFrame(frame);
+                    frame = window.requestAnimationFrame(() => {
+                        frame = window.requestAnimationFrame(() => {
+                            if (!disposed) fitText();
+                        });
+                    });
+                };
+
+                const fitters = window.__paidDisplayPanelFitters || new Set();
+                window.__paidDisplayPanelFitters = fitters;
+                fitters.add(fitText);
+
+                scheduleFit();
+                if (document.fonts?.ready) document.fonts.ready.then(scheduleFit).catch(() => {});
+
+                const resizeObserver = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(scheduleFit) : null;
+                if (textareaRef.current) resizeObserver?.observe(textareaRef.current);
+                window.addEventListener('resize', scheduleFit);
+                window.addEventListener('beforeprint', fitText);
+
+                return () => {
+                    disposed = true;
+                    window.cancelAnimationFrame(frame);
+                    fitters.delete(fitText);
+                    resizeObserver?.disconnect();
+                    window.removeEventListener('resize', scheduleFit);
+                    window.removeEventListener('beforeprint', fitText);
+                };
+            }, [fitText]);
+
+            return (
+                <textarea
+                    ref={textareaRef}
+                    className={className}
+                    style={fitStyle}
+                    placeholder={placeholder}
+                    value={value}
+                    onChange={onChange}
+                />
             );
         };
 
@@ -3919,9 +4039,9 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                     <h2 className="text-wise-fast font-black uppercase tracking-tighter leading-none mb-14 text-center w-full" style={{ fontSize: '4.25rem' }}>
                                         TEAM<span className="screen-title-space"> </span><br className="pdf-title-break" />UPDATES
                                     </h2>
-                                    <textarea
+                                    <TeamSlideTextarea
                                         className="presentation-textarea w-full max-w-[88%] h-[16rem] resize-none outline-none bg-transparent text-wise-fast text-center uppercase tracking-[0.04em] font-black placeholder:text-wise-fast/30"
-                                        style={getTeamSlideTextStyle(activeNarratives['team_updates'], 24)}
+                                        baseFontSize={24}
                                         placeholder=""
                                         value={formatTeamSlideText(activeNarratives['team_updates'] || '')}
                                         onChange={e => updateNarrative('team_updates', formatTeamSlideText(e.target.value))}
@@ -3936,9 +4056,9 @@ ${JSON.stringify(buildAISummaryPayload(sourceNarratives, reportContext))}`
                                     <h2 className="text-wise-fast font-black uppercase tracking-tighter leading-none mb-14 text-center w-full" style={{ fontSize: '4.25rem' }}>
                                         UPCOMING<span className="screen-title-space"> </span><br className="pdf-title-break" />PLANS
                                     </h2>
-                                    <textarea
+                                    <TeamSlideTextarea
                                         className="presentation-textarea w-full max-w-[88%] h-[16rem] resize-none outline-none bg-transparent text-wise-fast text-center uppercase tracking-[0.04em] font-black placeholder:text-wise-fast/30"
-                                        style={getTeamSlideTextStyle(activeNarratives['upcoming_plans'], 21)}
+                                        baseFontSize={21}
                                         placeholder=""
                                         value={formatTeamSlideText(activeNarratives['upcoming_plans'] || '')}
                                         onChange={e => updateNarrative('upcoming_plans', formatTeamSlideText(e.target.value))}
